@@ -149,3 +149,64 @@ ArduCopter SITL
 
 This verifies the first programmatic MAVLink communication baseline
 between AirMouse software and the simulated ArduPilot flight controller.
+
+## MAVLink Vehicle State Decoding
+
+Status: VERIFIED
+
+Date: 29 September 2026
+
+### Objective
+
+Extend the verified MAVLink HEARTBEAT baseline so AirMouse can interpret
+flight-controller state rather than displaying only raw numeric values.
+
+### Implementation
+
+The MAVLink heartbeat monitor was extended to decode:
+
+- MAVLink vehicle type
+- autopilot type
+- ArduCopter flight mode
+- armed/disarmed state
+- MAVLink system state
+- actual HEARTBEAT source system/component IDs
+
+pymavlink protocol definitions are used instead of maintaining duplicate
+hard-coded MAVLink enum tables.
+
+The armed state is determined using the MAV_MODE_FLAG_SAFETY_ARMED bit
+within HEARTBEAT base_mode.
+
+ArduCopter flight mode is derived from custom_mode using pymavlink's
+vehicle-specific mode mapping.
+
+### Verification
+
+The decoder was tested against controlled ArduCopter SITL states.
+
+| SITL State | base_mode | custom_mode | Decoded Result |
+|---|---:|---:|---|
+| GUIDED + ARMED | 217 | 4 | GUIDED, Armed YES |
+| GUIDED + DISARMED | 89 | 4 | GUIDED, Armed NO |
+| STABILIZE + DISARMED | 81 | 0 | STABILIZE, Armed NO |
+
+Additional decoded values were verified as:
+
+- Vehicle type 2 → MAV_TYPE_QUADROTOR
+- Autopilot type 3 → MAV_AUTOPILOT_ARDUPILOTMEGA
+- System status 3 → MAV_STATE_STANDBY
+
+A source-ID diagnostic also established that the received HEARTBEAT was
+sent by MAVLink system 1, component 1. The monitor was therefore changed
+to use the received message source identifiers rather than pymavlink's
+connection target component value.
+
+### Result
+
+AirMouse can now receive a MAVLink HEARTBEAT and translate key
+flight-controller state into human-readable information.
+
+This does not yet verify continuous telemetry monitoring, attitude
+telemetry, position telemetry, MAVLink command transmission, ROS 2
+integration, Gazebo integration, or autonomous control.
