@@ -108,3 +108,44 @@ Rohit owns:
 Previously verified components must not be marked incomplete or reinstalled without evidence of a problem.
 
 Future progress must be recorded only after actual testing and verification.
+
+## MAVLink Communication Baseline
+
+Status: VERIFIED
+
+Date: 28 September 2026
+
+### Test Configuration
+
+- ArduCopter SITL running locally
+- MAVProxy connected to ArduCopter SITL
+- MAVProxy forwarding MAVLink telemetry to UDP 127.0.0.1:14550
+- Python environment: ~/venv-ardupilot
+- pymavlink version: 2.4.50
+- Test program: flight_control/mavlink/heartbeat_monitor.py
+
+### Verified Result
+
+The AirMouse Python MAVLink client successfully received a HEARTBEAT
+message from the ArduCopter SITL MAVLink stream.
+
+Observed values:
+
+- System ID: 1
+- Component ID: 0
+- Vehicle type: 2
+- Autopilot type: 3
+- Base mode: 81
+- Custom mode: 0
+- System status: 3
+
+Verified communication path:
+
+ArduCopter SITL
+→ MAVLink
+→ MAVProxy
+→ UDP 127.0.0.1:14550
+→ AirMouse heartbeat_monitor.py
+
+This verifies the first programmatic MAVLink communication baseline
+between AirMouse software and the simulated ArduPilot flight controller.
