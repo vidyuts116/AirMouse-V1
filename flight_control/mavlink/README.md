@@ -132,3 +132,115 @@ During the verification run, SITL reported approximately:
 These values validate the telemetry-processing path in simulation. They do not represent validation of a physical battery monitor or current sensor.
 
 The sensor present, enabled, and health values are currently retained as raw MAVLink bitmasks. Human-readable per-sensor decoding can be added in a later health-management layer.
+
+### command_interface.py
+
+Purpose:
+- Provide a reusable MAVLink command layer for AirMouse V1.
+- Establish and verify MAVLink communication before issuing commands.
+- Send generic MAVLink `COMMAND_LONG` requests.
+- Match commands with their corresponding `COMMAND_ACK`.
+- Apply bounded timeouts to connection, acknowledgement, and state verification.
+- Provide verified ARM and DISARM operations.
+
+The command interface currently provides:
+
+- `connect()`
+- `send_command_long()`
+- `wait_for_armed_state()`
+- `arm()`
+- `disarm()`
+
+## Command Acknowledgement and State Verification
+
+AirMouse does not treat a successful `COMMAND_ACK` as proof that the vehicle has reached the requested state.
+
+For state-changing operations such as ARM and DISARM, two separate conditions are verified:
+
+1. ArduPilot accepts the command through `COMMAND_ACK`.
+2. Subsequent `HEARTBEAT` telemetry confirms the requested armed state.
+
+This provides the following control sequence:
+
+    Command request
+        |
+        v
+    COMMAND_ACK
+        |
+        v
+    State telemetry
+        |
+        v
+    State confirmation
+
+For ARM/DISARM, the interface uses:
+
+- `MAV_CMD_COMPONENT_ARM_DISARM`
+- `MAV_MODE_FLAG_SAFETY_ARMED`
+
+## Timeout Handling
+
+The command interface uses bounded timeouts rather than waiting indefinitely.
+
+Verified timeout behaviour includes:
+
+- Missing MAVLink heartbeat during connection
+- Missing `COMMAND_ACK`
+- Requested armed state not being reached
+
+Timeout measurement uses `time.monotonic()` so timeout behaviour is independent of changes to the system wall clock.
+
+## ARM/DISARM SITL Verification
+
+ARM and DISARM control has been verified using ArduPilot SITL.
+
+The integration test confirmed the complete sequence:
+
+    Initial state: DISARMED
+        |
+        v
+    ARM command
+        |
+        v
+    MAV_RESULT_ACCEPTED
+        |
+        v
+    HEARTBEAT confirms ARMED
+        |
+        v
+    DISARM command
+        |
+        v
+    MAV_RESULT_ACCEPTED
+        |
+        v
+    HEARTBEAT confirms DISARMED
+
+The repository includes:
+
+- `test_command_interface.py`
+- `test_arm_disarm.py`
+
+These provide reproducible command-interface and ARM/DISARM verification against SITL.
+
+## Command-Layer Architecture Note
+
+The current implementation directly receives MAVLink messages using `recv_match()`.
+
+This is appropriate for the present single-consumer development stage.
+
+Before AirMouse introduces multiple concurrent MAVLink consumers, ROS 2 integration, or multiple higher-level modules sharing one MAVLink connection, this architecture must be refactored to use a centralized MAVLink message-routing/dispatch layer.
+
+The future routing layer should ensure that telemetry and command acknowledgements are distributed to the correct consumers without multiple modules independently competing for messages from the same MAVLink connection.
+
+## Physical Aircraft Safety and Portability
+
+The command-processing logic is intended to remain reusable when transitioning from SITL to the physical AirMouse V1 aircraft.
+
+The current SITL endpoint remains:
+
+    udpin:127.0.0.1:14550
+
+The transport must be made configurable for physical hardware.
+
+Physical-aircraft ARM/DISARM testing must not simply repeat the SITL procedure. It will require a dedicated bench-validation and safety procedure appropriate to the installed flight controller, propulsion system, communication transport, and aircraft configuration.
