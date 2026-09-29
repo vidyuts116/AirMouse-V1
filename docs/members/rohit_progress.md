@@ -210,3 +210,92 @@ flight-controller state into human-readable information.
 This does not yet verify continuous telemetry monitoring, attitude
 telemetry, position telemetry, MAVLink command transmission, ROS 2
 integration, Gazebo integration, or autonomous control.
+
+## MAVLink Attitude Telemetry
+
+Status: VERIFIED
+
+Date: 29 September 2026
+
+### Objective
+
+Extend the AirMouse MAVLink baseline from vehicle-state decoding to
+continuous attitude telemetry reception from ArduCopter SITL.
+
+### Implementation
+
+A new MAVLink attitude monitor was created at:
+
+`flight_control/mavlink/attitude_monitor.py`
+
+The monitor:
+
+- establishes the existing MAVLink connection to ArduCopter SITL
+- waits for and verifies a HEARTBEAT before processing telemetry
+- identifies the HEARTBEAT source system and component
+- continuously receives MAVLink ATTITUDE messages
+- reads roll, pitch, and yaw orientation
+- reads roll, pitch, and yaw angular rates
+- converts MAVLink attitude values from radians to degrees
+- converts angular rates from radians/second to degrees/second
+- limits terminal display frequency independently of telemetry reception
+- supports clean termination using Ctrl+C
+
+### Verification
+
+The ATTITUDE stream was successfully received continuously from
+ArduCopter SITL.
+
+A separate measurement observed:
+
+- 41 ATTITUDE messages in approximately 5.04 seconds
+- observed message rate approximately 8.13 Hz
+
+The monitor was also tested while the simulated vehicle underwent
+attitude changes.
+
+During the dynamic test, the monitor observed significant pitch changes,
+including approximately:
+
+- pitch: -6.61 degrees with pitch rate about -31.60 degrees/second
+- pitch: +8.01 degrees during the subsequent corrective response
+
+The telemetry then returned close to level attitude.
+
+This verifies that the monitor is receiving changing flight-controller
+attitude data rather than repeatedly displaying a static value.
+
+### Result
+
+AirMouse can now continuously receive and interpret MAVLink ATTITUDE
+telemetry, including:
+
+- roll
+- pitch
+- yaw
+- roll rate
+- pitch rate
+- yaw rate
+
+This establishes the first continuous motion-state telemetry baseline
+between AirMouse software and the simulated ArduPilot flight controller.
+
+### Physical-Drone Portability Note
+
+The attitude decoding, unit conversion, streaming, and display logic are
+not inherently SITL-specific and can be reused with the physical
+AirMouse flight controller.
+
+The current connection string:
+
+`udpin:127.0.0.1:14550`
+
+is simulation-specific and must later be replaced or refactored into a
+configurable MAVLink connection mechanism for the physical flight
+controller/companion-computer communication link.
+
+Physical hardware communication has not yet been verified.
+
+This milestone does not yet verify position telemetry, command
+transmission, ROS 2 integration, autonomous control, or physical flight
+hardware.
