@@ -300,3 +300,82 @@ The repository includes:
 This test performs the verified SITL mode-control integration cycle.
 
 Mode-changing tests against a future physical aircraft will require a separate hardware safety and validation procedure and must not be treated as equivalent to SITL testing.
+
+## MAVLink Connection Manager
+
+The `MAVLinkConnectionManager` provides the transport and connection-lifecycle boundary for the AirMouse V1 MAVLink architecture.
+
+Its responsibilities currently include:
+
+- opening a MAVLink connection,
+- accepting a configurable MAVLink connection string,
+- passing transport-specific options to `pymavlink`,
+- verifying communication through MAVLink heartbeat reception,
+- storing the detected system and component IDs,
+- providing controlled access to the verified connection,
+- preventing accidental duplicate connection attempts,
+- closing the connection cleanly,
+- clearing connection state after disconnect,
+- cleaning up correctly when heartbeat verification fails.
+
+### Architecture
+
+The Connection Manager separates MAVLink transport establishment from the higher-level AirMouse flight-control logic.
+
+Conceptually:
+
+    SITL / Physical Flight Controller
+                |
+                v
+         MAVLink Transport
+                |
+                v
+      MAVLinkConnectionManager
+                |
+                v
+       Verified MAVLink Connection
+                |
+                v
+        Future Message Router
+                |
+        +-------+-------+
+        |       |       |
+      State   Command  Health
+
+Higher-level modules should therefore not need to know whether the underlying MAVLink transport is UDP, serial/UART, USB, telemetry radio, or another supported transport.
+
+### SITL Verification
+
+The Connection Manager has been verified against ArduPilot SITL using:
+
+    udpin:127.0.0.1:14550
+
+Verified behaviour includes:
+
+- successful heartbeat-based connection establishment,
+- system and component ID detection,
+- verified connection-object access,
+- rejection of access before connection,
+- rejection of duplicate connection attempts,
+- clean disconnect and state reset,
+- timeout when no heartbeat is received,
+- clean internal state after a failed connection attempt.
+
+The repository includes:
+
+- `test_connection_manager.py`
+- `test_connection_timeout.py`
+
+### Physical-Drone Portability
+
+The Connection Manager itself does not hard-code the SITL UDP endpoint.
+
+The connection string and optional transport parameters are supplied externally when the manager is created.
+
+This allows the same connection-management logic to later support physical hardware through an appropriate connection such as USB, serial/UART, telemetry radio, or network transport without rewriting the Connection Manager.
+
+The exact physical Pixhawk device, baud rate, and transport settings will be selected during hardware integration and should eventually be supplied by the AirMouse configuration layer.
+
+The current SITL-specific connection strings in the integration tests are test configuration and are not part of the reusable Connection Manager core.
+
+Automatic reconnection and more advanced connection supervision are intentionally deferred until their requirements are defined by the higher-level health-monitoring and message-routing architecture.
