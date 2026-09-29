@@ -132,6 +132,83 @@ class MAVLinkCommandInterface:
                     "component_id": heartbeat.get_srcComponent(),
                 }
 
+    def wait_for_mode(self, mode_name, timeout=5):
+        """Wait until heartbeat telemetry confirms the requested flight mode."""
+
+        if self.master is None:
+            raise RuntimeError("MAVLink connection has not been established.")
+
+        requested_mode = mode_name.upper()
+
+        mode_mapping = self.master.mode_mapping()
+
+        if not mode_mapping or requested_mode not in mode_mapping:
+            raise ValueError(
+                f"Unsupported flight mode: {requested_mode}"
+            )
+
+        requested_mode_id = mode_mapping[requested_mode]
+        deadline = time.monotonic() + timeout
+
+        while True:
+            remaining = deadline - time.monotonic()
+
+            if remaining <= 0:
+                raise TimeoutError(
+                    f"Vehicle did not reach {requested_mode} mode "
+                    f"within {timeout} seconds."
+                )
+
+            heartbeat = self.master.recv_match(
+                type="HEARTBEAT",
+                blocking=True,
+                timeout=remaining,
+            )
+
+            if heartbeat is None:
+                continue
+
+            if heartbeat.custom_mode == requested_mode_id:
+                return {
+                    "mode": requested_mode,
+                    "custom_mode": heartbeat.custom_mode,
+                    "system_id": heartbeat.get_srcSystem(),
+                    "component_id": heartbeat.get_srcComponent(),
+                }
+
+    def set_mode(self, mode_name, state_timeout=5):
+        """Request a flight-mode change and verify it through heartbeat telemetry."""
+
+        if self.master is None:
+            raise RuntimeError("MAVLink connection has not been established.")
+
+        requested_mode = mode_name.upper()
+        mode_mapping = self.master.mode_mapping()
+
+        if not mode_mapping or requested_mode not in mode_mapping:
+            raise ValueError(
+                f"Unsupported flight mode: {requested_mode}"
+            )
+
+        requested_mode_id = mode_mapping[requested_mode]
+
+        self.master.mav.set_mode_send(
+            self.master.target_system,
+            mavutil.mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED,
+            requested_mode_id,
+        )
+
+        state = self.wait_for_mode(
+            requested_mode,
+            timeout=state_timeout,
+        )
+
+        return {
+            "success": True,
+            "mode": requested_mode,
+            "state": state,
+        }
+
     def arm(self, ack_timeout=5, state_timeout=5):
         """Request vehicle arming and verify the resulting armed state."""
 

@@ -244,3 +244,59 @@ The current SITL endpoint remains:
 The transport must be made configurable for physical hardware.
 
 Physical-aircraft ARM/DISARM testing must not simply repeat the SITL procedure. It will require a dedicated bench-validation and safety procedure appropriate to the installed flight controller, propulsion system, communication transport, and aircraft configuration.
+
+## Flight Mode Control
+
+The MAVLink command interface supports verified flight-mode changes.
+
+The interface currently provides:
+
+- `wait_for_mode()`
+- `set_mode()`
+
+`wait_for_mode()` observes MAVLink `HEARTBEAT` telemetry and verifies that the vehicle's `custom_mode` matches the requested flight mode.
+
+`set_mode()`:
+
+1. validates the requested mode against the vehicle's available mode mapping,
+2. sends a MAVLink `SET_MODE` request,
+3. waits for subsequent `HEARTBEAT` telemetry,
+4. confirms that the requested mode was actually reached.
+
+A transmitted mode request is therefore not treated by itself as proof of a successful state transition.
+
+### Flight Mode SITL Verification
+
+Flight-mode control has been verified using ArduPilot SITL.
+
+The verified integration sequence was:
+
+    STABILIZE
+        |
+        v
+    Request GUIDED
+        |
+        v
+    HEARTBEAT confirms GUIDED
+        |
+        v
+    Request STABILIZE
+        |
+        v
+    HEARTBEAT confirms STABILIZE
+
+Testing also confirmed:
+
+- detection of the current `STABILIZE` mode,
+- timeout when waiting for a mode that was not entered,
+- successful `STABILIZE` to `GUIDED` transition,
+- successful `GUIDED` to `STABILIZE` transition,
+- rejection of an unsupported flight-mode name.
+
+The repository includes:
+
+    test_mode_control.py
+
+This test performs the verified SITL mode-control integration cycle.
+
+Mode-changing tests against a future physical aircraft will require a separate hardware safety and validation procedure and must not be treated as equivalent to SITL testing.
