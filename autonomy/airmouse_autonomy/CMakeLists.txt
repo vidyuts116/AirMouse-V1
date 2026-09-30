@@ -43,3 +43,16 @@ install(TARGETS
   offboard_bridge_node
   DESTINATION lib/${PROJECT_NAME}
 )
+
+# Find Point Cloud Libraries
+find_package(sensor_msgs REQUIRED)
+find_package(pcl_conversions REQUIRED)
+
+# Build Perception Filter Node
+add_executable(perception_filter_node src/perception_filter_node.cpp)
+ament_target_dependencies(perception_filter_node rclcpp sensor_msgs pcl_conversions)
+
+install(TARGETS
+  perception_filter_node
+  DESTINATION lib/${PROJECT_NAME}
+)
