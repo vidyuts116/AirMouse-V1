@@ -56,3 +56,15 @@ install(TARGETS
   perception_filter_node
   DESTINATION lib/${PROJECT_NAME}
 )
+
+# Find Navigation Messages
+find_package(nav_msgs REQUIRED)
+
+# Build SLAM Mapping Node
+add_executable(slam_mapping_node src/slam_mapping_node.cpp)
+ament_target_dependencies(slam_mapping_node rclcpp sensor_msgs nav_msgs)
+
+install(TARGETS
+  slam_mapping_node
+  DESTINATION lib/${PROJECT_NAME}
+)
