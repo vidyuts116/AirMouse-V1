@@ -1313,3 +1313,394 @@ The transition plan remains:
           v
     Flight testing
 
+
+## Health / Fail-Safe Monitor
+
+The AirMouse Health / Fail-Safe Monitor provides a transport-independent safety assessment layer above the Vehicle State Manager.
+
+Implementation:
+
+    flight_control/mavlink/health_monitor.py
+
+The monitor does not receive MAVLink messages directly and does not transmit MAVLink commands.
+
+Instead, it evaluates structured state snapshots produced by the Vehicle State Manager.
+
+The architecture is:
+
+    ArduPilot SITL / Physical Flight Controller
+                    |
+                    v
+            Connection Manager
+                    |
+                    v
+              Message Router
+                    |
+                    v
+          Vehicle State Manager
+                    |
+                    v
+        Health / Fail-Safe Monitor
+                    |
+                    v
+          Health / Safety Decision
+
+This separation keeps MAVLink transport, telemetry decoding, health assessment, and command execution as distinct responsibilities.
+
+### Health States
+
+The monitor classifies health using four states:
+
+- `HEALTHY`
+- `WARNING`
+- `CRITICAL`
+- `UNKNOWN`
+
+`UNKNOWN` is intentionally preserved rather than treating missing telemetry as healthy.
+
+This prevents unavailable information from silently becoming a false indication of safety.
+
+### Heartbeat Freshness
+
+The monitor evaluates the age of the most recently routed flight-controller heartbeat using the monotonic `updated_at` timestamp stored by the Vehicle State Manager.
+
+Default thresholds are:
+
+    Warning age:   > 2 seconds
+    Critical age:  > 5 seconds
+
+The resulting states are:
+
+    age <= 2 s          -> HEALTHY
+    2 s < age <= 5 s   -> WARNING
+    age > 5 s           -> CRITICAL
+    no heartbeat        -> UNKNOWN
+
+Using monotonic timestamps prevents wall-clock adjustments from affecting telemetry-age calculations.
+
+### System-Health Freshness
+
+`SYS_STATUS` freshness is evaluated independently from heartbeat freshness.
+
+Default thresholds are:
+
+    Warning age:   > 3 seconds
+    Critical age:  > 6 seconds
+
+The resulting states are:
+
+    age <= 3 s          -> HEALTHY
+    3 s < age <= 6 s   -> WARNING
+    age > 6 s           -> CRITICAL
+    no telemetry        -> UNKNOWN
+
+This allows the system to distinguish between a live flight controller and stale health telemetry.
+
+### Battery-Level Evaluation
+
+Battery percentage is evaluated using:
+
+1. `BATTERY_STATUS` when available,
+2. `SYS_STATUS` as a fallback.
+
+Default thresholds are:
+
+    Above 30%       -> HEALTHY
+    21% to 30%      -> WARNING
+    20% or below    -> CRITICAL
+    unavailable     -> UNKNOWN
+
+`BATTERY_STATUS` has priority when both sources provide a remaining-battery percentage.
+
+These thresholds are configurable and should be treated as development defaults rather than final physical-aircraft battery policy.
+
+### Sensor-Health Evaluation
+
+Sensor health is evaluated from the MAVLink sensor bitmasks provided through `SYS_STATUS`.
+
+The monitor considers sensors that are both:
+
+- present, and
+- enabled.
+
+If every required sensor reports healthy, the result is:
+
+    HEALTHY
+
+If one or more enabled and present sensors report unhealthy, the result is:
+
+    CRITICAL
+
+If the required sensor-health information is unavailable, the result is:
+
+    UNKNOWN
+
+Disabled sensors are not incorrectly treated as failed required sensors.
+
+### Overall Health Assessment
+
+The `evaluate()` method obtains one Vehicle State snapshot and evaluates:
+
+- heartbeat freshness,
+- system-health freshness,
+- battery level,
+- sensor health.
+
+The overall severity precedence is:
+
+    CRITICAL
+        |
+        v
+    WARNING
+        |
+        v
+    UNKNOWN
+        |
+        v
+    HEALTHY
+
+Therefore:
+
+- any `CRITICAL` check makes the overall result `CRITICAL`,
+- otherwise any `WARNING` check makes it `WARNING`,
+- otherwise any `UNKNOWN` check makes it `UNKNOWN`,
+- only an entirely healthy assessment becomes `HEALTHY`.
+
+Using one state snapshot per overall evaluation prevents different checks from unintentionally evaluating different telemetry snapshots.
+
+### Fail-Safe Policy Decisions
+
+The monitor maps overall health states to policy decisions:
+
+    HEALTHY   -> CONTINUE
+    WARNING   -> CAUTION
+    UNKNOWN   -> HOLD
+    CRITICAL  -> FAILSAFE
+
+These decisions represent safety policy outputs.
+
+They do not directly transmit flight-control commands.
+
+This distinction is intentional.
+
+For example:
+
+    CRITICAL
+        |
+        v
+    FAILSAFE decision
+
+does not automatically mean:
+
+    RTL
+
+or:
+
+    LAND
+
+or:
+
+    DISARM
+
+The appropriate physical response depends on vehicle state, altitude, flight phase, available navigation, mission context, hardware configuration, and the type of failure.
+
+Actual command execution remains the responsibility of a higher-level safety/control layer using the Command Manager.
+
+This prevents the health-monitoring layer from unexpectedly controlling the aircraft.
+
+### Fail-Safe Causes
+
+The fail-safe decision also identifies the checks responsible for the current policy decision.
+
+Each reported cause contains:
+
+- check name,
+- health status,
+- reason.
+
+Only causes matching the effective overall severity are selected.
+
+For example, if the assessment contains:
+
+    heartbeat = CRITICAL
+    battery   = WARNING
+    sensors   = UNKNOWN
+
+the overall status becomes:
+
+    CRITICAL
+
+and the fail-safe causes identify the critical heartbeat condition rather than mixing lower-severity conditions into the primary failure cause.
+
+Multiple causes at the same effective severity are preserved.
+
+### State Snapshot Isolation
+
+Health assessments are returned as snapshots.
+
+External modification of a returned health structure does not modify the monitor's stored assessment.
+
+This follows the same defensive-state approach used by the Vehicle State Manager.
+
+### SITL Verification
+
+The Health / Fail-Safe Monitor has been verified against real telemetry from ArduPilot SITL through the complete receive architecture:
+
+    ArduPilot SITL
+          |
+          v
+    Connection Manager
+          |
+          v
+      Message Router
+          |
+          v
+    Vehicle State Manager
+          |
+          v
+    Health / Fail-Safe Monitor
+
+The verified SITL run successfully evaluated:
+
+- real heartbeat freshness,
+- real `SYS_STATUS` freshness,
+- real battery state,
+- real sensor-health masks,
+- overall health,
+- fail-safe policy.
+
+During the verified integration run, the system reported:
+
+    Overall status: HEALTHY
+    Heartbeat:      HEALTHY
+    System health:  HEALTHY
+    Battery:        HEALTHY
+    Sensors:        HEALTHY
+    Decision:       CONTINUE
+
+Testing also confirmed:
+
+- no Message Router subscriber errors,
+- no direct MAVLink receive ownership inside the Health Monitor,
+- no MAVLink command transmission from the Health Monitor,
+- clean shutdown of the telemetry pipeline.
+
+The repository includes tests covering:
+
+- heartbeat freshness,
+- system-health freshness,
+- battery-level evaluation,
+- sensor-health evaluation,
+- overall health aggregation,
+- fail-safe policy mapping,
+- fail-safe cause selection,
+- real SITL integration.
+
+### Receive and Command Ownership
+
+The Health / Fail-Safe Monitor does not call `recv_match()`.
+
+The centralized Message Router remains the sole continuous MAVLink receive owner.
+
+The monitor also does not call MAVLink command transmission functions.
+
+Its responsibility is:
+
+    Observe structured state
+            |
+            v
+       Assess health
+            |
+            v
+      Produce policy
+
+not:
+
+    Receive MAVLink directly
+
+and not:
+
+    Control the aircraft directly
+
+This separation reduces concurrency risk and keeps safety-policy logic independently testable.
+
+### Physical-Drone Portability
+
+The reusable Health / Fail-Safe Monitor contains:
+
+- no SITL connection string,
+- no UDP-specific logic,
+- no serial-specific logic,
+- no direct Pixhawk dependency,
+- no MAVLink receive loop,
+- no direct command transmission.
+
+It consumes only structured Vehicle State snapshots.
+
+The development architecture is:
+
+    ArduPilot SITL
+          |
+          v
+    Connection Manager
+          |
+          v
+      Message Router
+          |
+          v
+    Vehicle State Manager
+          |
+          v
+    Health / Fail-Safe Monitor
+
+The intended physical-aircraft architecture is:
+
+    Pixhawk / Flight Controller
+          |
+          v
+    Connection Manager
+          |
+          v
+      Message Router
+          |
+          v
+    Vehicle State Manager
+          |
+          v
+    Health / Fail-Safe Monitor
+
+The core Health Monitor architecture is therefore intended to remain unchanged when moving from SITL to the physical AirMouse aircraft.
+
+Physical-aircraft validation will still be mandatory.
+
+In particular, development thresholds must be reviewed against the real aircraft's:
+
+- battery chemistry,
+- cell count,
+- battery capacity,
+- voltage behaviour under load,
+- telemetry rates,
+- sensor configuration,
+- estimator configuration,
+- flight-controller parameters,
+- expected communication latency,
+- hardware failsafes,
+- mission requirements.
+
+The final physical-aircraft fail-safe response must also be validated separately before automatic actions such as HOLD, RTL, LAND, or other recovery behaviour are enabled.
+
+The transition remains:
+
+    SITL validation
+          |
+          v
+    Bench / hardware integration
+          |
+          v
+    HIL or controlled validation
+          |
+          v
+    Controlled physical testing
+          |
+          v
+    Flight testing
