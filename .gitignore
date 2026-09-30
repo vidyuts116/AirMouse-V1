@@ -12,3 +12,11 @@ venv-*/
 .DS_Store
 .vscode/
 .idea/
+
+# ROS 2 / colcon generated workspace artifacts
+ros2/build/
+ros2/install/
+ros2/log/
+
+# Python packaging metadata
+*.egg-info/

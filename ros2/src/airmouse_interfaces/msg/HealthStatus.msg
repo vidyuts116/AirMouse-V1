@@ -1,0 +1,6 @@
+builtin_interfaces/Time stamp
+string overall_status
+string heartbeat_status
+string system_health_status
+string battery_status
+string sensor_status
