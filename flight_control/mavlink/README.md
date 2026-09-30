@@ -781,3 +781,535 @@ The intended transition is therefore:
 The transport configuration may change during physical-aircraft integration, but the Vehicle State Manager's core state-decoding architecture is intended to remain unchanged.
 
 Physical-aircraft validation will still be required because real sensor behaviour, message availability, timing, battery configuration, estimator state, and hardware-specific conditions may differ from SITL.
+
+---
+
+## MAVLink Command Manager
+
+### Purpose
+
+The `MAVLinkCommandManager` provides the centralized command and mode-control layer for the AirMouse V1 MAVLink architecture.
+
+Its responsibility is to transmit vehicle commands while coordinating command acknowledgements and resulting vehicle-state changes without directly consuming MAVLink receive traffic.
+
+The Command Manager therefore separates command transmission from telemetry reception.
+
+The intended architecture is:
+
+    Command / Mission Logic
+             |
+             v
+      Command Manager
+        /         \
+       v           v
+    MAVLink      Vehicle State
+    Commands      Manager
+       |             ^
+       v             |
+    Flight         Message
+    Controller      Router
+       |             ^
+       +-------------+
+
+The Message Router remains the sole continuous MAVLink receive owner.
+
+The Command Manager does not call:
+
+- `recv_match()`
+- `wait_heartbeat()`
+- `mavlink_connection()`
+
+This prevents competing MAVLink consumers from stealing telemetry or command acknowledgements from one another.
+
+### Dependencies
+
+The Command Manager is constructed using three existing AirMouse components:
+
+    MAVLinkCommandManager(
+        connection,
+        router,
+        vehicle_state,
+    )
+
+These provide:
+
+- `connection` — the verified pymavlink connection used for MAVLink transmission,
+- `router` — the centralized MAVLink Message Router,
+- `vehicle_state` — the centralized Vehicle State Manager.
+
+The Command Manager does not create its own MAVLink connection.
+
+This keeps transport ownership separate from command logic and supports later migration from SITL to physical flight-controller communication.
+
+### Lifecycle
+
+The Command Manager provides:
+
+- `start()`
+- `stop()`
+- `is_started`
+
+`start()` subscribes the manager to routed `COMMAND_ACK` messages.
+
+Duplicate starts are rejected.
+
+`stop()` removes the `COMMAND_ACK` subscription cleanly.
+
+Repeated stops are safe.
+
+Commands requiring routed acknowledgements must not be transmitted through the manager before it has been started.
+
+### COMMAND_LONG Transactions
+
+Generic MAVLink `COMMAND_LONG` operations are transmitted through:
+
+    send_command_long()
+
+The method accepts:
+
+- the MAVLink command ID,
+- parameters 1 through 7,
+- an acknowledgement timeout.
+
+The transaction flow is:
+
+    Command request
+          |
+          v
+    Command Manager
+          |
+          | COMMAND_LONG
+          v
+    Flight Controller
+          |
+          | COMMAND_ACK
+          v
+     Message Router
+          |
+          v
+    Command Manager
+
+Before transmitting a command, any previously stored acknowledgement for the same command ID is cleared.
+
+The command is then transmitted using the existing verified MAVLink connection.
+
+The manager waits for the matching acknowledgement delivered through the Message Router.
+
+If no acknowledgement arrives within the configured timeout, a `TimeoutError` is raised.
+
+### Routed COMMAND_ACK Handling
+
+The Command Manager subscribes to:
+
+    COMMAND_ACK
+
+The Message Router delivers acknowledgements to:
+
+    _handle_command_ack()
+
+Received acknowledgements are stored according to their MAVLink command ID.
+
+Waiting command operations are coordinated using a threading condition.
+
+The public acknowledgement wait operation is:
+
+    wait_for_command_ack()
+
+A successfully retrieved acknowledgement is consumed and removed from the internal acknowledgement store.
+
+This prevents an old acknowledgement from being reused by a later transaction.
+
+Returned acknowledgement information includes:
+
+- command ID,
+- MAVLink result value,
+- decoded MAVLink result name.
+
+Examples of MAVLink result states include:
+
+- `MAV_RESULT_ACCEPTED`
+- `MAV_RESULT_DENIED`
+- `MAV_RESULT_FAILED`
+- other result values defined by the active MAVLink dialect.
+
+### Command Transaction Serialization
+
+MAVLink `COMMAND_ACK` correlation is primarily based on command ID.
+
+To prevent concurrent command transactions from consuming or overwriting one another's acknowledgements, `COMMAND_LONG` transactions are serialized using an internal command lock.
+
+The transaction boundary is effectively:
+
+    acquire command lock
+            |
+            v
+    clear stale ACK
+            |
+            v
+    transmit command
+            |
+            v
+    wait for routed ACK
+            |
+            v
+    consume ACK
+            |
+            v
+    release command lock
+
+Testing confirmed that a second command transaction remains blocked while the first transaction is waiting for completion.
+
+After the first transaction completes, the next command is allowed to transmit.
+
+This deliberately favors deterministic command handling over parallel command transmission.
+
+### Vehicle-State Confirmation
+
+A successful MAVLink acknowledgement confirms that the flight controller processed or accepted a command request.
+
+It does not by itself prove that the aircraft has reached the requested state.
+
+For state-changing operations, AirMouse therefore performs a second verification step using the centralized Vehicle State Manager.
+
+The resulting pattern is:
+
+    Send request
+        |
+        v
+    Receive acknowledgement
+        |
+        v
+    Verify actual vehicle state
+
+This distinction is important for reliable autonomous operation.
+
+### Armed-State Confirmation
+
+The Command Manager provides:
+
+    wait_for_armed_state()
+
+This method does not receive MAVLink heartbeats directly.
+
+Instead, it repeatedly retrieves the current snapshot from the Vehicle State Manager and checks the routed flight state.
+
+It can confirm either:
+
+- ARMED
+- DISARMED
+
+The returned state information includes:
+
+- armed state,
+- system ID,
+- component ID,
+- current flight mode.
+
+If the requested state is not observed within the configured timeout, a `TimeoutError` is raised.
+
+### ARM Operation
+
+The public arming operation is:
+
+    arm()
+
+Arming uses:
+
+    MAV_CMD_COMPONENT_ARM_DISARM
+
+with:
+
+    param1 = 1
+
+The transaction is:
+
+    ARM request
+        |
+        v
+    COMMAND_LONG
+        |
+        v
+    COMMAND_ACK
+        |
+        v
+    Check ACK result
+        |
+        v
+    Vehicle State Manager
+        |
+        v
+    Confirm ARMED
+
+If the acknowledgement is not `MAV_RESULT_ACCEPTED`, the operation reports failure and does not wait for an armed-state transition.
+
+If the acknowledgement is accepted, the manager waits for routed vehicle telemetry to confirm that the aircraft actually became armed.
+
+### DISARM Operation
+
+The public disarming operation is:
+
+    disarm()
+
+Disarming uses:
+
+    MAV_CMD_COMPONENT_ARM_DISARM
+
+with:
+
+    param1 = 0
+
+The transaction is:
+
+    DISARM request
+        |
+        v
+    COMMAND_LONG
+        |
+        v
+    COMMAND_ACK
+        |
+        v
+    Check ACK result
+        |
+        v
+    Vehicle State Manager
+        |
+        v
+    Confirm DISARMED
+
+As with arming, command acceptance and actual vehicle-state transition are treated as separate stages.
+
+### Flight-Mode State Confirmation
+
+The Command Manager provides:
+
+    wait_for_mode()
+
+Requested mode names are normalized to uppercase.
+
+The method reads routed state snapshots from the Vehicle State Manager until the requested flight mode is observed.
+
+It does not directly consume MAVLink `HEARTBEAT` messages.
+
+If the requested mode is not observed within the configured timeout, a `TimeoutError` is raised.
+
+### SET_MODE Operation
+
+The public flight-mode operation is:
+
+    set_mode()
+
+The requested mode is first validated against the flight controller's available mode mapping.
+
+Unsupported modes are rejected before any MAVLink mode-change request is transmitted.
+
+Valid mode changes are transmitted using:
+
+    set_mode_send()
+
+with:
+
+    MAV_MODE_FLAG_CUSTOM_MODE_ENABLED
+
+After transmission, the Command Manager waits for the Vehicle State Manager to confirm the requested mode through routed telemetry.
+
+The complete mode-change flow is:
+
+    Requested mode
+          |
+          v
+    Validate mode mapping
+          |
+          v
+      SET_MODE
+          |
+          v
+    Flight Controller
+          |
+          v
+    HEARTBEAT telemetry
+          |
+          v
+     Message Router
+          |
+          v
+    Vehicle State Manager
+          |
+          v
+    Command Manager
+          |
+          v
+    Confirm requested mode
+
+This preserves centralized MAVLink receive ownership while still verifying the real vehicle state.
+
+### Failure and Timeout Behaviour
+
+The Command Manager distinguishes several failure classes.
+
+A missing `COMMAND_ACK` produces an acknowledgement timeout.
+
+A rejected command acknowledgement causes the command operation to report failure without waiting for a state transition.
+
+An accepted command followed by failure to observe the requested vehicle state produces a state-confirmation timeout.
+
+An unsupported flight mode is rejected before transmission.
+
+These distinctions are important because:
+
+    command transmitted
+
+does not necessarily mean:
+
+    command accepted
+
+and:
+
+    command accepted
+
+does not necessarily mean:
+
+    requested physical state reached
+
+The architecture keeps these stages explicitly separate.
+
+### SITL Verification
+
+The Command Manager has been tested against real ArduPilot SITL through the complete AirMouse MAVLink pipeline.
+
+ARM/DISARM integration verified:
+
+    DISARMED
+        |
+        v
+      ARM
+        |
+        v
+    COMMAND_ACK accepted
+        |
+        v
+    Vehicle State = ARMED
+        |
+        v
+     DISARM
+        |
+        v
+    COMMAND_ACK accepted
+        |
+        v
+    Vehicle State = DISARMED
+
+SET_MODE integration verified:
+
+    STABILIZE
+        |
+        v
+      GUIDED
+        |
+        v
+    Vehicle State = GUIDED
+        |
+        v
+     STABILIZE
+        |
+        v
+    Vehicle State = STABILIZE
+
+Testing confirmed:
+
+- real `COMMAND_LONG` transmission to ArduPilot SITL,
+- routed `COMMAND_ACK` handling,
+- acknowledgement timeout behaviour,
+- acknowledgement consumption,
+- rejected acknowledgement handling,
+- command transaction serialization,
+- routed armed-state confirmation,
+- real ARM transition,
+- real DISARM transition,
+- routed mode-state confirmation,
+- unsupported-mode rejection,
+- real STABILIZE-to-GUIDED transition,
+- real GUIDED-to-STABILIZE transition,
+- continued concurrent telemetry processing,
+- Message Router remaining the sole continuous MAVLink receive owner,
+- clean shutdown of the command and telemetry pipeline.
+
+The repository includes Command Manager tests covering:
+
+- vehicle-state waiting,
+- mode-state waiting,
+- SET_MODE behaviour,
+- ARM/DISARM behaviour,
+- rejected acknowledgements,
+- ARM/DISARM SITL integration,
+- SET_MODE SITL integration.
+
+### Physical-Drone Portability
+
+The Command Manager contains no hard-coded SITL connection string and does not create its own MAVLink transport.
+
+Instead, it receives an already established connection from the Connection Manager.
+
+The development architecture is:
+
+    ArduPilot SITL
+          |
+          v
+    Connection Manager
+          |
+          +------------------+
+          |                  |
+          v                  v
+    Message Router      Command Manager
+          |                  |
+          v                  |
+    Vehicle State <----------+
+
+The intended physical-aircraft architecture is:
+
+    Pixhawk / Flight Controller
+          |
+          v
+    Connection Manager
+          |
+          +------------------+
+          |                  |
+          v                  v
+    Message Router      Command Manager
+          |                  |
+          v                  |
+    Vehicle State <----------+
+
+During physical-aircraft integration, the transport configuration can change from the SITL UDP endpoint to the appropriate Pixhawk USB, serial, or UART connection.
+
+The reusable Command Manager command logic is intended to remain transport-independent.
+
+Physical-aircraft validation will still be mandatory because real hardware introduces conditions not fully represented by SITL, including:
+
+- physical arming checks,
+- safety-switch behaviour,
+- sensor-health requirements,
+- estimator readiness,
+- battery conditions,
+- RC or GCS interactions,
+- flight-controller parameters,
+- hardware failsafes,
+- communication latency,
+- real actuator and vehicle state.
+
+The transition plan remains:
+
+    SITL validation
+          |
+          v
+    Bench / hardware integration
+          |
+          v
+    HIL or controlled validation
+          |
+          v
+    Controlled physical testing
+          |
+          v
+    Flight testing
+
