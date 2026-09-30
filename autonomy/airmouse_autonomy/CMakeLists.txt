@@ -34,3 +34,12 @@ if(BUILD_TESTING)
 endif()
 
 ament_package()
+
+# Build Offboard Bridge Node
+add_executable(offboard_bridge_node src/offboard_bridge_node.cpp)
+ament_target_dependencies(offboard_bridge_node rclcpp geometry_msgs)
+
+install(TARGETS
+  offboard_bridge_node
+  DESTINATION lib/${PROJECT_NAME}
+)
