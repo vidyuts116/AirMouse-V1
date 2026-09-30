@@ -77,3 +77,12 @@ install(TARGETS
   local_trajectory_node
   DESTINATION lib/${PROJECT_NAME}
 )
+
+# Build Mission Executive Node
+add_executable(mission_executive_node src/mission_executive_node.cpp)
+ament_target_dependencies(mission_executive_node rclcpp geometry_msgs)
+
+install(TARGETS
+  mission_executive_node
+  DESTINATION lib/${PROJECT_NAME}
+)
