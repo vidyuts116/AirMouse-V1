@@ -12,6 +12,7 @@ from flight_control.mavlink.message_router import MAVLinkMessageRouter
 from flight_control.mavlink.vehicle_state import VehicleStateManager
 from flight_control.mavlink.health_monitor import HealthFailSafeMonitor
 from flight_control.mavlink.command_manager import MAVLinkCommandManager
+from flight_control.mavlink.data_logger import MAVLinkDataLogger
 
 from .adapter_node import AirMouseROSAdapter
 
@@ -26,6 +27,7 @@ class AirMouseRuntime:
         connection_options=None,
         namespace="/airmouse",
         publish_rate_hz=10.0,
+        log_path=None,
     ):
         if not connection_string:
             raise ValueError(
@@ -36,12 +38,14 @@ class AirMouseRuntime:
         self.connection_options = dict(connection_options or {})
         self.namespace = namespace
         self.publish_rate_hz = float(publish_rate_hz)
+        self.log_path = log_path
 
         self.connection_manager = None
         self.router = None
         self.vehicle_state = None
         self.health_monitor = None
         self.command_manager = None
+        self.data_logger = None
         self.adapter = None
 
         self._started = False
@@ -88,6 +92,12 @@ class AirMouseRuntime:
                 self.vehicle_state,
             )
 
+            if self.log_path:
+                self.data_logger = MAVLinkDataLogger(
+                    self.router,
+                    self.log_path,
+                )
+
             self.adapter = AirMouseROSAdapter(
                 vehicle_state=self.vehicle_state,
                 health_monitor=self.health_monitor,
@@ -100,6 +110,12 @@ class AirMouseRuntime:
             # MAVLink receive loop starts.
             self.vehicle_state.start()
             self.command_manager.start()
+
+            # The logger is a router subscriber, never a transport owner.
+            # Register it before the sole MAVLink receive loop starts.
+            if self.data_logger is not None:
+                self.data_logger.start()
+
             self.router.start()
 
             self._started = True
@@ -127,6 +143,15 @@ class AirMouseRuntime:
             try:
                 if self.command_manager.is_started:
                     self.command_manager.stop()
+            except Exception:
+                pass
+
+        # Stop the logger while the router still exists. This removes its
+        # subscriptions and drains queued records before transport teardown.
+        if self.data_logger is not None:
+            try:
+                if self.data_logger.is_started:
+                    self.data_logger.stop()
             except Exception:
                 pass
 
