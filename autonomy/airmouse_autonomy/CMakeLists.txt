@@ -86,3 +86,9 @@ install(TARGETS
   mission_executive_node
   DESTINATION lib/${PROJECT_NAME}
 )
+
+# Install launch directory
+install(DIRECTORY
+  launch
+  DESTINATION share/${PROJECT_NAME}
+)
