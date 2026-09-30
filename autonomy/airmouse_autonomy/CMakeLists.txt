@@ -68,3 +68,12 @@ install(TARGETS
   slam_mapping_node
   DESTINATION lib/${PROJECT_NAME}
 )
+
+# Build Local Planner Node
+add_executable(local_trajectory_node src/local_trajectory_node.cpp)
+ament_target_dependencies(local_trajectory_node rclcpp nav_msgs geometry_msgs)
+
+install(TARGETS
+  local_trajectory_node
+  DESTINATION lib/${PROJECT_NAME}
+)
