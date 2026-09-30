@@ -17,6 +17,10 @@ class RuntimeConfigurationNode(Node):
         self.declare_parameter("vehicle_namespace", "/airmouse")
         self.declare_parameter("publish_rate_hz", 10.0)
 
+        # Empty means logging is disabled. Storage location is supplied
+        # externally so runtime code remains deployment-independent.
+        self.declare_parameter("log_path", "")
+
     def read_configuration(self):
         connection_string = (
             self.get_parameter("connection_string")
@@ -44,6 +48,13 @@ class RuntimeConfigurationNode(Node):
             .double_value
         )
 
+        log_path = (
+            self.get_parameter("log_path")
+            .get_parameter_value()
+            .string_value
+            .strip()
+        )
+
         if not connection_string:
             raise ValueError(
                 "ROS parameter 'connection_string' is required. "
@@ -68,6 +79,7 @@ class RuntimeConfigurationNode(Node):
             "heartbeat_timeout": heartbeat_timeout,
             "namespace": namespace,
             "publish_rate_hz": publish_rate_hz,
+            "log_path": log_path or None,
         }
 
 
@@ -97,6 +109,7 @@ def main(args=None):
             connection_string=config["connection_string"],
             namespace=config["namespace"],
             publish_rate_hz=config["publish_rate_hz"],
+            log_path=config["log_path"],
         )
 
         connection_info = runtime.start(

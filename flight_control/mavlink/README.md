@@ -1704,3 +1704,385 @@ The transition remains:
           |
           v
     Flight testing
+
+## MAVLink Data Logger
+
+### Purpose
+
+The `MAVLinkDataLogger` provides asynchronous persistence of selected
+AirMouse MAVLink telemetry for debugging, testing, post-flight analysis,
+and later system-performance evaluation.
+
+The logger is a downstream consumer of the centralized
+`MAVLinkMessageRouter`.
+
+It does not create a MAVLink connection and does not call
+`recv_match()`.
+
+This preserves centralized MAVLink receive ownership.
+
+### Architecture
+
+The logging path is:
+
+    MAVLink Transport
+           |
+           v
+    Connection Manager
+           |
+           v
+    Message Router
+           |
+           +-------------------+
+           |                   |
+           v                   v
+    Vehicle State         Data Logger
+                               |
+                               v
+                        Bounded Queue
+                               |
+                               v
+                        Writer Thread
+                               |
+                               v
+                          JSONL File
+
+The Message Router remains the sole owner of incoming MAVLink reception.
+
+The Data Logger receives telemetry only through router subscriptions.
+
+### Logged MAVLink Messages
+
+The default logger configuration subscribes to:
+
+- `HEARTBEAT`
+- `ATTITUDE`
+- `GLOBAL_POSITION_INT`
+- `LOCAL_POSITION_NED`
+- `SYS_STATUS`
+- `BATTERY_STATUS`
+- `COMMAND_ACK`
+
+The selected message types may be changed without changing MAVLink
+transport ownership.
+
+### Structured Log Format
+
+Records are persisted using JSON Lines (`.jsonl`).
+
+Each record contains:
+
+- UTC timestamp,
+- monotonic process timestamp,
+- MAVLink message type,
+- decoded MAVLink payload.
+
+JSONL allows telemetry records to be written independently and later
+processed using standard analysis tools without loading the entire log
+into memory.
+
+### Non-Blocking Producer Path
+
+The Data Logger must never delay the Message Router.
+
+Router callbacks therefore place records into a bounded queue using a
+non-blocking operation.
+
+Storage writes are performed separately by the logger writer thread.
+
+If the queue reaches capacity, new records are dropped rather than
+blocking MAVLink message routing.
+
+The logger exposes a `dropped` statistic so overload remains observable.
+
+This design deliberately prioritizes live flight-data routing over
+telemetry persistence.
+
+### Overload Behaviour
+
+The bounded queue prevents unbounded memory growth.
+
+When incoming telemetry temporarily exceeds storage throughput:
+
+    Router
+      |
+      +--> queue available --> record accepted
+      |
+      +--> queue full -------> record dropped
+                                |
+                                v
+                         dropped counter
+
+The router producer path remains non-blocking.
+
+Overload testing verified that records beyond queue capacity were
+dropped while the queue remained bounded and the producer path
+continued operating.
+
+### Writer Fault Isolation
+
+Storage failure must not stop the routed MAVLink producer path.
+
+The logger tracks:
+
+- `received`
+- `written`
+- `dropped`
+- `write_errors`
+
+Writer health is represented separately from logger lifecycle state.
+
+The logger exposes:
+
+- `is_started`
+- `is_writer_alive`
+- `has_failed`
+- `last_error`
+
+This distinction is important because the logger may still own router
+subscriptions even if its writer thread has terminated because of a
+storage failure.
+
+A failed writer can therefore be detected explicitly rather than
+appearing healthy.
+
+### Storage-Failure Behaviour
+
+The logger was tested using an invalid storage target.
+
+The test verified:
+
+- the storage failure was recorded,
+- the writer thread terminated,
+- writer failure became externally visible,
+- the routed producer path remained operational,
+- explicit shutdown remained safe,
+- router subscriptions were removed during shutdown.
+
+Storage failure therefore remains isolated from the main MAVLink
+receive and routing path.
+
+### Lifecycle
+
+The Data Logger participates in the AirMouse runtime lifecycle without
+owning the MAVLink transport.
+
+During startup, its router subscriptions are registered before the
+centralized receive loop begins.
+
+The lifecycle is:
+
+    construct
+       |
+       v
+    start()
+       |
+       +--> subscribe to Message Router
+       |
+       +--> start writer thread
+       |
+       v
+    receive routed telemetry
+       |
+       v
+    stop()
+       |
+       +--> unsubscribe from Message Router
+       |
+       +--> stop accepting new records
+       |
+       +--> drain queued records
+       |
+       +--> join writer thread
+       |
+       v
+    stopped
+
+The logger does not own the Message Router, Connection Manager, or
+underlying MAVLink transport.
+
+### Runtime Integration
+
+`AirMouseRuntime` optionally constructs the Data Logger when a log path
+is configured.
+
+The runtime registers all routed consumers before starting the Message
+Router receive loop.
+
+The relevant startup order is:
+
+    Connection Manager
+           |
+           v
+    Message Router constructed
+           |
+           v
+    Vehicle State subscriptions
+           |
+           v
+    Command Manager subscriptions
+           |
+           v
+    Data Logger subscriptions
+           |
+           v
+    Message Router receive loop
+
+During shutdown, the Data Logger is stopped while the Message Router
+still exists.
+
+This allows the logger to remove its subscriptions and drain queued
+records before router and transport teardown.
+
+### ROS 2 Configuration
+
+Runtime logging is controlled using the ROS 2 parameter:
+
+    log_path
+
+An empty `log_path` disables runtime logging.
+
+When a path is supplied, `AirMouseRuntime` constructs the Data Logger
+using that externally supplied storage location.
+
+No deployment-specific log location is hard-coded into the logger.
+
+This keeps storage configuration separate from reusable flight-control
+logic.
+
+### SITL Verification
+
+The Data Logger has been verified using live ArduPilot SITL telemetry
+delivered through the centralized Message Router.
+
+During a 10-second live routed test:
+
+- 210 records were received,
+- 210 records were written,
+- 0 records were dropped,
+- 0 write errors occurred.
+
+Recorded MAVLink message types included:
+
+- `HEARTBEAT`
+- `ATTITUDE`
+- `GLOBAL_POSITION_INT`
+- `LOCAL_POSITION_NED`
+- `SYS_STATUS`
+- `BATTERY_STATUS`
+
+The Vehicle State Manager simultaneously received routed telemetry,
+confirming that the logger operated as one downstream subscriber rather
+than taking ownership of the MAVLink receive path.
+
+### Full ROS Runtime Verification
+
+The logger was also verified through the production AirMouse ROS 2
+runtime.
+
+The runtime successfully:
+
+- established the configured MAVLink connection,
+- started the centralized routing architecture,
+- enabled logging through `log_path`,
+- persisted live SITL telemetry,
+- produced structurally valid JSONL,
+- stopped cleanly.
+
+The production runtime test persisted 220 live telemetry records.
+
+This verifies the complete path:
+
+    ArduPilot SITL
+          |
+          v
+    MAVLink Transport
+          |
+          v
+    Connection Manager
+          |
+          v
+    Message Router
+          |
+          v
+      Data Logger
+          |
+          v
+       JSONL File
+
+### Receive Ownership
+
+The Data Logger never directly receives MAVLink traffic from the
+transport.
+
+The required ownership model is:
+
+    Connection Manager
+           |
+           v
+    Message Router
+           |
+           +--> Vehicle State
+           |
+           +--> Command Manager
+           |
+           +--> Data Logger
+           |
+           +--> future routed consumers
+
+The Message Router remains the sole incoming MAVLink receive owner in
+the routed AirMouse architecture.
+
+The Data Logger consumes routed messages only.
+
+### Physical-Drone Portability
+
+The Data Logger contains no SITL-specific MAVLink endpoint.
+
+It does not depend on:
+
+- UDP port `14550`,
+- MAVProxy,
+- ArduPilot SITL process details,
+- Pixhawk USB device paths,
+- serial baud rates,
+- telemetry-radio configuration.
+
+Transport selection remains below the logger at the Connection Manager
+boundary.
+
+During simulation the path may be:
+
+    SITL / MAVProxy
+          |
+          v
+    Connection Manager
+          |
+          v
+    Message Router
+          |
+          v
+    Data Logger
+
+With physical hardware the path may become:
+
+    Pixhawk / Flight Controller
+          |
+          v
+    USB / Serial / UART / Telemetry
+          |
+          v
+    Connection Manager
+          |
+          v
+    Message Router
+          |
+          v
+    SAME Data Logger
+
+The logger therefore remains reusable when AirMouse transitions from
+simulation to physical hardware.
+
+Only deployment and transport configuration should change.
+
+The Data Logger core should not require a transport-specific rewrite.
