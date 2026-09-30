@@ -23,3 +23,11 @@ if(BUILD_TESTING)
 endif()
 
 ament_package()
+
+add_executable(autonomy_core_node src/autonomy_core.cpp)
+ament_target_dependencies(autonomy_core_node rclcpp std_msgs)
+
+install(TARGETS
+  autonomy_core_node
+  DESTINATION lib/${PROJECT_NAME}
+)
