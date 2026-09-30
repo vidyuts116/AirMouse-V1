@@ -379,3 +379,144 @@ The exact physical Pixhawk device, baud rate, and transport settings will be sel
 The current SITL-specific connection strings in the integration tests are test configuration and are not part of the reusable Connection Manager core.
 
 Automatic reconnection and more advanced connection supervision are intentionally deferred until their requirements are defined by the higher-level health-monitoring and message-routing architecture.
+
+## MAVLink Message Router
+
+The `MAVLinkMessageRouter` provides the centralized MAVLink receive and dispatch layer for AirMouse V1.
+
+Its primary purpose is to ensure that higher-level modules do not independently compete for messages using `recv_match()` on the same MAVLink connection.
+
+### Architecture
+
+The intended MAVLink data path is:
+
+    SITL / Physical Pixhawk
+              |
+              v
+    MAVLinkConnectionManager
+              |
+              v
+     MAVLinkMessageRouter
+              |
+        +-----+-----+------+
+        |           |      |
+        v           v      v
+      State       Health  Command
+      Manager     Monitor  ACK handling
+                    |
+                    v
+               ROS 2 Bridge
+
+The Connection Manager owns transport establishment and lifecycle.
+
+The Message Router becomes the centralized consumer of incoming MAVLink traffic and distributes received messages to interested subscribers.
+
+### Subscription Model
+
+Consumers register callbacks for specific MAVLink message types using:
+
+- `subscribe()`
+- `unsubscribe()`
+
+Multiple consumers may subscribe to the same MAVLink message type.
+
+For example, a `HEARTBEAT` may eventually be consumed by both:
+
+- the Vehicle State Manager,
+- the Health Monitor.
+
+Duplicate callback registration for the same message type is prevented.
+
+### Centralized Reception
+
+The router provides:
+
+- `receive_once()` for controlled single-message reception,
+- `start()` for continuous background reception,
+- `stop()` for controlled shutdown.
+
+The continuous receiver uses a dedicated thread so that incoming MAVLink traffic can be received and distributed without requiring every consumer to independently read from the underlying connection.
+
+Higher-level AirMouse modules should therefore receive MAVLink information through the router rather than calling `recv_match()` independently.
+
+### Subscriber Fault Isolation
+
+Subscriber callbacks are isolated from each other.
+
+If one subscriber raises an exception:
+
+- the router remains operational,
+- other subscribers can continue receiving messages,
+- the callback failure is recorded for diagnostics.
+
+Recorded callback failures can be retrieved using:
+
+    get_callback_errors()
+
+The method returns a snapshot of the diagnostic error list rather than exposing the router's internal list directly.
+
+Fault detection is intentionally separated from response policy.
+
+The Message Router records callback failures but does not currently decide whether those failures require warnings, degraded operation, failsafe behaviour, or other actions. Those decisions belong to the higher-level health and safety architecture.
+
+### Thread Safety
+
+Subscriber registration and removal are protected by a lock.
+
+The router takes a snapshot of the relevant subscriber list before invoking callbacks.
+
+Callbacks are therefore not executed while the subscriber lock is held.
+
+This keeps subscription management separate from callback execution and reduces unnecessary coupling between subscribers.
+
+### SITL Verification
+
+The Message Router has been verified against ArduPilot SITL together with the `MAVLinkConnectionManager`.
+
+Verified behaviour includes:
+
+- subscriber registration,
+- multiple subscribers receiving the same message,
+- routing different MAVLink message types independently,
+- duplicate-subscription protection,
+- subscriber removal,
+- single-message reception,
+- continuous background reception,
+- duplicate-start protection,
+- clean router shutdown,
+- callback fault isolation,
+- callback-error diagnostics,
+- real `HEARTBEAT` routing from SITL,
+- real `ATTITUDE` routing from SITL,
+- clean integration with the Connection Manager.
+
+The repository includes:
+
+- `test_message_router.py`
+- `test_message_router_sitl.py`
+
+### Physical-Drone Portability
+
+The Message Router contains no SITL-specific endpoint or transport assumption.
+
+It receives an already-established MAVLink connection and therefore does not need to know whether that connection originated from:
+
+- SITL over UDP,
+- Pixhawk over USB,
+- serial/UART,
+- telemetry radio,
+- or another supported MAVLink transport.
+
+Transport-specific configuration remains the responsibility of the Connection Manager and future configuration layer.
+
+This allows the same Message Router implementation to be reused when AirMouse transitions from simulation to physical hardware.
+
+### Current Limitation
+
+Existing earlier AirMouse modules still contain some direct `recv_match()` usage.
+
+Those modules were developed before the centralized router existed.
+
+They must be migrated to consume routed MAVLink messages before multiple concurrent AirMouse components are operated together.
+
+Until that migration is completed, the router architecture should be treated as the target receive path for new higher-level modules.
