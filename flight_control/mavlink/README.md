@@ -520,3 +520,264 @@ Those modules were developed before the centralized router existed.
 They must be migrated to consume routed MAVLink messages before multiple concurrent AirMouse components are operated together.
 
 Until that migration is completed, the router architecture should be treated as the target receive path for new higher-level modules.
+
+## Vehicle State Manager
+
+The `VehicleStateManager` maintains the latest structured AirMouse vehicle state from MAVLink messages delivered by the centralized `MAVLinkMessageRouter`.
+
+It does not establish a MAVLink transport and does not call `recv_match()` directly.
+
+This preserves centralized MAVLink receive ownership and prevents multiple AirMouse modules from competing for messages on the same connection.
+
+### Architecture
+
+The vehicle-state data path is:
+
+    SITL / Physical Flight Controller
+                |
+                v
+      MAVLinkConnectionManager
+                |
+                v
+       MAVLinkMessageRouter
+                |
+                v
+        VehicleStateManager
+                |
+                v
+       Structured Vehicle State
+                |
+        +-------+-------+
+        |       |       |
+      Health   ROS 2   Mission
+      Logic    Bridge   Logic
+
+The Connection Manager owns transport establishment.
+
+The Message Router owns incoming MAVLink reception.
+
+The Vehicle State Manager subscribes to routed messages and converts them into a structured, thread-safe state representation.
+
+### MAVLink Inputs
+
+The Vehicle State Manager currently consumes:
+
+- `HEARTBEAT`
+- `ATTITUDE`
+- `GLOBAL_POSITION_INT`
+- `LOCAL_POSITION_NED`
+- `SYS_STATUS`
+- `BATTERY_STATUS`
+
+These messages populate six state sections:
+
+- `flight`
+- `attitude`
+- `global_position`
+- `local_position`
+- `system_health`
+- `battery`
+
+### Flight State
+
+`HEARTBEAT` telemetry is decoded into information including:
+
+- MAVLink system ID,
+- component ID,
+- vehicle type,
+- autopilot type,
+- flight mode,
+- armed state,
+- system status,
+- decoded system state.
+
+Flight-mode and armed-state information therefore becomes available to higher-level AirMouse modules without those modules directly reading MAVLink traffic.
+
+### Attitude State
+
+`ATTITUDE` telemetry provides:
+
+- roll,
+- pitch,
+- yaw,
+- roll rate,
+- pitch rate,
+- yaw rate.
+
+The reusable state layer stores these values in radians and radians per second.
+
+Unit conversion for presentation or application-specific interfaces can be performed by higher-level consumers when required.
+
+### Position State
+
+`GLOBAL_POSITION_INT` is decoded into:
+
+- latitude and longitude in degrees,
+- altitude in metres,
+- relative altitude in metres,
+- north/east/down velocity in metres per second.
+
+`LOCAL_POSITION_NED` is decoded into:
+
+- north position,
+- east position,
+- down position,
+- north/east/down velocity.
+
+The local position follows the MAVLink NED convention.
+
+### System Health and Battery State
+
+`SYS_STATUS` provides structured information including:
+
+- battery voltage,
+- battery current,
+- remaining battery percentage,
+- communication drop rate,
+- communication errors,
+- sensor-present mask,
+- sensor-enabled mask,
+- sensor-health mask.
+
+`BATTERY_STATUS` provides additional battery information including:
+
+- battery ID,
+- consumed current,
+- consumed energy,
+- remaining percentage,
+- battery fault bitmask.
+
+The Vehicle State Manager records this information but does not decide whether a particular value requires a warning or failsafe action.
+
+Health interpretation and response policy belong to the higher-level AirMouse health and safety architecture.
+
+### MAVLink Unknown Values
+
+MAVLink uses sentinel values for some unavailable measurements.
+
+The Vehicle State Manager converts supported unknown values to `None` rather than exposing them as apparently valid physical measurements.
+
+Examples currently handled include:
+
+- unknown `SYS_STATUS.voltage_battery`,
+- unknown `SYS_STATUS.current_battery`,
+- unknown battery remaining percentage,
+- unknown consumed current,
+- unknown consumed energy.
+
+This prevents downstream modules from accidentally treating unavailable telemetry as genuine sensor data.
+
+### State Snapshots and Thread Safety
+
+State updates and snapshot retrieval are protected by a lock.
+
+Consumers retrieve vehicle state using:
+
+    get_state()
+
+The returned state is a snapshot of the current structured state.
+
+The snapshot does not expose the internal section dictionaries directly, preventing consumers from accidentally modifying the Vehicle State Manager's internal state.
+
+Each populated state section also records an `updated_at` monotonic timestamp.
+
+These timestamps can later support telemetry-age and stale-data detection.
+
+### Lifecycle
+
+The Vehicle State Manager provides:
+
+- `start()`
+- `stop()`
+- `is_started`
+
+`start()` subscribes the manager to all required MAVLink message types.
+
+Duplicate starts are rejected.
+
+`stop()` removes the subscriptions cleanly.
+
+Repeated stops are safe, and the manager can subsequently be restarted.
+
+Stopping the manager does not currently erase the most recently stored state.
+
+### SITL Verification
+
+The Vehicle State Manager has been verified with real ArduPilot SITL telemetry through the complete AirMouse MAVLink receive architecture:
+
+    ArduPilot SITL
+          |
+          v
+    Connection Manager
+          |
+          v
+      Message Router
+          |
+          v
+    Vehicle State Manager
+
+Real SITL verification successfully populated:
+
+- flight state,
+- attitude state,
+- global position,
+- local NED position,
+- system health,
+- battery state.
+
+Testing also confirmed:
+
+- correct MAVLink unit scaling,
+- flight-mode decoding,
+- armed-state decoding,
+- MAVLink unknown-value handling,
+- thread-safe state snapshots,
+- snapshot isolation,
+- lifecycle behaviour,
+- subscription cleanup,
+- restart behaviour,
+- zero router callback errors during the verified integration run,
+- clean shutdown of the complete telemetry pipeline.
+
+The repository includes:
+
+- `test_vehicle_state.py`
+- `test_vehicle_state_sitl.py`
+
+### Physical-Drone Portability
+
+The reusable `VehicleStateManager` contains no SITL-specific connection string and does not establish a MAVLink transport.
+
+It receives standard MAVLink messages exclusively through the Message Router.
+
+The intended transition is therefore:
+
+    Development:
+
+    ArduPilot SITL
+          |
+          v
+    Connection Manager
+          |
+          v
+      Message Router
+          |
+          v
+    Vehicle State Manager
+
+    Physical Aircraft:
+
+    Pixhawk / Flight Controller
+          |
+          v
+    Connection Manager
+          |
+          v
+      Message Router
+          |
+          v
+    Vehicle State Manager
+
+The transport configuration may change during physical-aircraft integration, but the Vehicle State Manager's core state-decoding architecture is intended to remain unchanged.
+
+Physical-aircraft validation will still be required because real sensor behaviour, message availability, timing, battery configuration, estimator state, and hardware-specific conditions may differ from SITL.
