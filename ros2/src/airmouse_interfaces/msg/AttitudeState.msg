@@ -1,0 +1,7 @@
+builtin_interfaces/Time stamp
+float64 roll_rad
+float64 pitch_rad
+float64 yaw_rad
+float64 roll_rate_rad_s
+float64 pitch_rate_rad_s
+float64 yaw_rate_rad_s

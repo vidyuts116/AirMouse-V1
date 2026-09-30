@@ -3,8 +3,12 @@ import time
 
 from pymavlink import mavutil
 
+from .monitor_config import parse_monitor_connection
 
-CONNECTION = "udpin:127.0.0.1:14550"
+
+CONNECTION = parse_monitor_connection(
+    "AirMouse V1 MAVLink Attitude Monitor"
+)
 DISPLAY_INTERVAL = 0.5
 
 print("AirMouse V1 - MAVLink Attitude Monitor")

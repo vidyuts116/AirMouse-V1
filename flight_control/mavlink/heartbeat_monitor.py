@@ -1,6 +1,11 @@
 from pymavlink import mavutil
 
-CONNECTION = "udpin:127.0.0.1:14550"
+from .monitor_config import parse_monitor_connection
+
+
+CONNECTION = parse_monitor_connection(
+    "AirMouse V1 MAVLink Heartbeat Monitor"
+)
 
 print("AirMouse V1 - MAVLink Heartbeat Monitor")
 print(f"Listening on {CONNECTION} ...")

@@ -1,0 +1,9 @@
+builtin_interfaces/Time stamp
+uint8 system_id
+uint8 component_id
+string vehicle_type
+string autopilot_type
+string flight_mode
+bool armed
+uint8 system_status
+string system_state

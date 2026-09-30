@@ -1,3 +1,15 @@
+"""Legacy standalone MAVLink command utility.
+
+This module predates the centralized AirMouse MessageRouter architecture.
+
+It is retained only for isolated diagnostic/backward-compatibility use
+and must not be composed into the production AirMouse runtime because it
+directly receives MAVLink messages.
+
+Production command handling uses MAVLinkCommandManager together with the
+centralized MAVLinkMessageRouter.
+"""
+
 import time
 
 from pymavlink import mavutil
