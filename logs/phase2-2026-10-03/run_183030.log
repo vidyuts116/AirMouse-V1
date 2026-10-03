@@ -1,0 +1,16 @@
+
+Stage 0  World empty
+  [PASS] generated from current baseline: measured 21626e644770873e… | expected 21626e644770873e… (OBSERVED)
+  [PASS] gz sdf -k: measured Valid. | expected Valid. (OBSERVED)
+  [PASS] LiDAR rate (sim time): measured 10.10 Hz over 2.28 s | expected 10 Hz ±10 % (OBSERVED)
+  [INFO] vehicle rest pose: x -0.0000, y -0.0000, z 0.0400 m, yaw -0.000 deg (spawn 0, 0); 0 wall boxes (OBSERVED)
+  [PASS] beams matching ray cast (finite within 5 cm, or both no-return): measured 360/360 = 100.0 % (0 beams expect a return) | expected >= 98 % (ANALYTICAL ray cast vs OBSERVED) (OBSERVED)
+  [INFO] range bias / noise: no finite returns expected (open world) (OBSERVED)
+
+Cleanup: gz sim processes left = 0; GZ_IP=127.0.0.1
+
+| World | Result | Wall boxes | Beams matching | Range bias | Single-scan noise | LiDAR rate |
+|---|---|---|---|---|---|---|
+| empty | PASS | 0 | 360/360 | — | — | 10.10 Hz |
+
+OVERALL: PASS
