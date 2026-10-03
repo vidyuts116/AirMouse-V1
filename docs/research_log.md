@@ -49,4 +49,12 @@ Chronological engineering log. Each entry carries evidence labels: OBSERVED, SOU
 - **ExternalNav loss mid-hover:**
   - "EKF3 stopped aiding" at +15 s. **No failsafe and no mode change** through +40 s, with the vehicle LOITERing on dead-reckoning. EKF test ratios fell to 0.
   - **SAFETY FINDING:** a loss of the SLAM feed is not caught by default failsafes. Options (a)–(d) are listed for Rohit. See `phase3-sitl.md` §10.4.
+- **Interface contract drafted:** `docs/interfaces/odometry_to_ardupilot.md` specifies what Doshi's SLAM must send to ArduPilot:
+  - message: ODOMETRY id 331, `LOCAL_FRD` / `BODY_FRD` (other frames are silently dropped)
+  - quaternion body→local; velocity in body FRD
+  - covariance indices 0/6/11/15/18/20, clamped to the `VISO_*_M_NSE` floors; `velocity_covariance` unused
+  - `reset_counter` on jumps; quality −1 when lost
+  - 20–30 Hz, `VISO_DELAY_MS` set to the measured latency, `SET_GPS_GLOBAL_ORIGIN` at startup
+  - a failsafe contract pending Rohit
+  - every item cites the 4.6.3 source
 
