@@ -36,7 +36,7 @@ TOOLS = ROOT / "tools"
 BASELINE = ROOT / "simulation" / "airmouse_quadrotor.sdf"
 DIAG_DIR = ROOT / "simulation" / "diagnostics"
 JOINTFIX = DIAG_DIR / "airmouse_force_diagnostic_jointfix.sdf"
-BASELINE_SHA = "de85fc006cfa95239bb724c288560ece89fb04c96d96c76c741f80d9d1ed6a0f"  # + IMU + LiDAR + depth
+BASELINE_SHA = "1224906b074b16317329e07107e510c751b4693969e1e00ddc48187d8a36b91c"  # IMU + LiDAR (depth camera reverted)
 GZ_VERSION = "8.15.0"
 REQUIRED_TOOLS = ["airmouse_hover_helper.cc", "airmouse_sensor_probe.cc", "airmouse_hover_acceptance.py",
                   "airmouse_differential_thrust.py", "measure_airmouse_diagnostic.py"]
