@@ -1,0 +1,14 @@
+# Build outputs and caches
+build/
+install/
+__pycache__/
+*.pyc
+*.dylib
+.DS_Store
+
+# Homebrew bottle/download cache (~2 GB), not project source
+downloads/
+
+# Large logs: CSV files over 5 MB under logs/ are listed here individually
+# (git cannot ignore by size; check with: find logs -name '*.csv' -size +5M).
+# none at present

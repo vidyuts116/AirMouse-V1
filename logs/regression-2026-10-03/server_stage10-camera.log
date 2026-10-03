@@ -1,0 +1,31 @@
+libc++abi: terminating due to uncaught exception of type Ogre::RenderingAPIException: OGRE EXCEPTION(3:RenderingAPIException): Failed to created pipeline state for rendering, error output of type float4 is not compatible with a MTLPixelFormatRGBA32Uint color attachment. in MetalRenderSystem::_hlmsPipelineStateObjectCreated at RenderSystems/Metal/src/OgreMetalRenderSystem.mm (line 1725)
+Stack trace (most recent call last) in thread 6099038208:
+#28   Object "libsystem_pthread.dylib", at 0x1968c7c07, in _pthread_start + 135
+#27   Object "libgz-sim8-sensors-system.8.15.0.dy", at 0x139e9ad57, in void* std::__1::__thread_proxy[abi:ne190102]<std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct>>, void (gz::sim::v8::systems::SensorsPrivate::*)(), gz::sim::v8::systems::SensorsPrivate*>>(void*) + 71
+#26   Object "libgz-sim8-sensors-system.8.15.0.dy", at 0x139e85eb7, in gz::sim::v8::systems::SensorsPrivate::RenderThread() + 207
+#25   Object "libgz-sim8-sensors-system.8.15.0.dy", at 0x139e8592f, in gz::sim::v8::systems::SensorsPrivate::RunOnce() + 855
+#24   Object "libgz-sensors8.8.2.2.dylib", at 0x13924026b, in gz::sensors::v8::Manager::RunOnce(std::__1::chrono::duration<long long, std::__1::ratio<1l, 1000000000l>> const&, bool) + 55
+#23   Object "libgz-sensors8.8.2.2.dylib", at 0x13924386f, in gz::sensors::v8::Sensor::Update(std::__1::chrono::duration<long long, std::__1::ratio<1l, 1000000000l>> const&, bool) + 107
+#22   Object "libgz-sensors8-depth_camera.8.2.2.d", at 0x1393cee53, in gz::sensors::v8::DepthCameraSensor::Update(std::__1::chrono::duration<long long, std::__1::ratio<1l, 1000000000l>> const&) + 531
+#21   Object "libgz-sensors8-rendering.8.2.2.dyli", at 0x1397e7d43, in gz::sensors::v8::RenderingSensor::Render() + 203
+#20   Object "libgz-rendering8-ogre2.8.2.3.dylib", at 0x13b517053, in gz::rendering::v8::Ogre2DepthCamera::Render() + 107
+#19   Object "RenderSystem_Metal.2.3.1.dylib", at 0x13adba1ab, in Ogre::MetalRenderSystem::compositorWorkspaceUpdate(Ogre::CompositorWorkspace*) + 43
+#18   Object "libOgreMain.2.3.1.dylib", at 0x13beb5547, in Ogre::CompositorWorkspace::_update(bool) + 751
+#17   Object "libOgreMain.2.3.1.dylib", at 0x13beaca9b, in Ogre::CompositorNode::_update(Ogre::Camera const*, Ogre::SceneManager*) + 279
+#16   Object "libOgreMain.2.3.1.dylib", at 0x13bec210f, in Ogre::CompositorPassQuad::execute(Ogre::Camera const*) + 1507
+#15   Object "libOgreMain.2.3.1.dylib", at 0x13bdce7db, in Ogre::RenderQueue::renderSingleObject(Ogre::Renderable*, Ogre::MovableObject const*, Ogre::RenderSystem*, bool, bool) + 327
+#14   Object "libOgreMain.2.3.1.dylib", at 0x13bd431e7, in Ogre::HlmsLowLevel::createShaderCacheEntry(unsigned int, Ogre::HlmsCache const&, unsigned int, Ogre::QueuedRenderable const&) + 731
+#13   Object "RenderSystem_Metal.2.3.1.dylib", at 0x13adb8653, in Ogre::MetalRenderSystem::_hlmsPipelineStateObjectCreated(Ogre::HlmsPso*) + 2403
+#12   Object "RenderSystem_Metal.2.3.1.dylib", at 0x13ada8747, in Ogre::ExceptionFactory::throwException(Ogre::Exception::ExceptionCodes, int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, char const*, long) + 739
+#11   Object "libc++abi.dylib", at 0x19687e33b, in __cxa_throw + 91
+#10   Object "libc++abi.dylib", at 0x19687e393, in __cxxabiv1::failed_throw(__cxxabiv1::__cxa_exception*) + 87
+#9    Object "libc++abi.dylib", at 0x19687ac2b, in std::__terminate(void (*)()) + 15
+#8    Object "libobjc.A.dylib", at 0x196494423, in _objc_terminate() + 171
+#7    Object "libc++abi.dylib", at 0x19686a4bb, in demangling_terminate_handler() + 279
+#6    Object "libc++abi.dylib", at 0x19687b857, in __abort_message + 131
+#5    Object "libsystem_c.dylib", at 0x1967cc84f, in abort + 123
+#4    Object "libsystem_pthread.dylib", at 0x1968c7887, in pthread_kill + 295
+#3    Object "libsystem_platform.dylib", at 0x1968d1763, in _sigtramp + 55
+#2    Object "libgz-tools2-backward.2.0.4.dylib", at 0x124961643, in backward::SignalHandling::sig_handler(int, __siginfo*, void*) + 19
+#1    Object "libgz-tools2-backward.2.0.4.dylib", at 0x1249616a7, in backward::SignalHandling::handleSignal(int, __siginfo*, void*) + 71
+#0    Object "libgz-tools2-backward.2.0.4.dylib", at 0x1249617e7, in backward::StackTraceImpl<backward::system_tag::darwin_tag>::load_from(void*, unsigned long, void*, void*) + 43

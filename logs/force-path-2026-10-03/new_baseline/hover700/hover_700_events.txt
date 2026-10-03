@@ -1,0 +1,4 @@
+t_rest=11.939000-12.248000 cmd_pose_t=12.248000 t_spun=11.901000-12.401000 t_reset=12.743000
+READY
+STATUS connected=1
+CMD speeds=700.000000,700.000000,700.000000,700.000000 cmd_sim=-1.000000 connected=1
