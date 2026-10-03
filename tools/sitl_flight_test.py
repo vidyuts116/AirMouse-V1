@@ -81,6 +81,12 @@ def main():
     parser.add_argument("--hover", type=float, default=30.0, help="analysed hover window, s")
     parser.add_argument("--settle", type=float, default=5.0, help="settling time excluded before the window, s")
     parser.add_argument("--no-land", action="store_true")
+    parser.add_argument("--mode", choices=["guided", "loiter"], default="guided",
+                        help="hover mode after the GUIDED takeoff; loiter centres RC 1-4 at 1500 (enables hover learning)")
+    parser.add_argument("--parm", action="append", default=[],
+                        help="extra parameter file(s) loaded after the standard set (e.g. GPS-denied config)")
+    parser.add_argument("--sidecar", default=None,
+                        help="command started after SITL boots (e.g. the ExternalNav stub); killed at the end")
     parser.add_argument("--logdir", default=str(ROOT / "logs" / f"phase3-{date.today().isoformat()}"))
     args = parser.parse_args()
     world = Path(args.world).resolve()
@@ -109,7 +115,7 @@ def main():
         streams = reg.Streams(gz, joints=True)
         sitl = subprocess.Popen(
             [str(AP / "build/sitl/bin/arducopter"), "--model", "JSON", "--speedup", "1", "-w",
-             "--defaults", ",".join(str(p) for p in PARMS), "-I0", "--home", "-35.363261,149.165230,584,0"],
+             "--defaults", ",".join(str(p) for p in PARMS + [Path(x).resolve() for x in args.parm]), "-I0", "--home", "-35.363261,149.165230,584,0"],
             cwd=run, stdout=open(run / "arducopter.log", "w"), stderr=subprocess.STDOUT, start_new_session=True)
         time.sleep(3)
         mav = pexpect.spawn(f"{VENV / 'mavproxy.py'} --master tcp:127.0.0.1:5760 --state-basedir {run}",
@@ -157,6 +163,14 @@ def main():
         if not reached:
             raise reg.StageFail("takeoff did not reach the target altitude")
         marks["reached"] = reached[0]
+        if args.mode == "loiter":
+            for ch in (1, 2, 3, 4):
+                mav.sendline(f"rc {ch} 1500")
+            drain(0.5)
+            mav.sendline("mode loiter")
+            i = mav.expect([r"LOITER>", pexpect.TIMEOUT], timeout=10)
+            ok &= log.check("flight", "switch to LOITER (RC 1-4 = 1500)", i == 0, "LOITER" if i == 0 else "no mode change",
+                            "LOITER", "OBSERVED")
         # Hover: settle + analysed window, watching for instability.
         t_end = reached[0] + args.settle + args.hover
         wall_end = time.monotonic() + 3 * (args.settle + args.hover) + 30   # lock-step: sim time stops if SITL dies
@@ -247,6 +261,22 @@ def main():
         log.info("hover", "learned MOT_THST_HOVER (after disarm, MOT_HOVER_LEARN 2)",
                  f"{learned:.4f} vs analytical " + ", ".join(f"{v:.4f} ({k})" for k, v in HOVER_ANALYTICAL.items())
                  + "; initial 0.54", "OBSERVED vs ANALYTICAL")
+    bins = sorted((run / "logs").glob("*.BIN"))
+    if bins:
+        from pymavlink import mavutil
+        df = mavutil.mavlink_connection(str(bins[-1]))
+        ct = []
+        while True:
+            m = df.recv_match(type="CTUN", blocking=False)
+            if m is None:
+                break
+            ct.append((m.TimeUS / 1e6, m.ThO, m.ThH, m.Alt))
+        ct = np.array(ct)
+        air = ct[ct[:, 3] > 0.8 * args.alt] if len(ct) else ct
+        if len(air):
+            log.info("hover", "dataflash CTUN hover throttle", f"ThH {air[0, 2]:.4f} -> {air[-1, 2]:.4f} over "
+                     f"{air[-1, 0] - air[0, 0]:.0f} s airborne; ThO mean (last 20 s airborne) "
+                     f"{air[air[:, 0] >= air[-1, 0] - 20][:, 1].mean():.4f}", "OBSERVED")
     if sampler and sampler.rows:
         rows = [r for r in sampler.rows if "reached" in marks and not math.isnan(r["sim"])]
         if len(rows) > 2:

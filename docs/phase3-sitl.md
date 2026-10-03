@@ -209,3 +209,23 @@ The hover PWM matches the ANALYTICAL exact-hover speed of 586.743 rad/s (1733.4 
 - **Takeoff overshoot:** whether to tune the +7.5–7.9 cm overshoot. Gains are still ArduPilot defaults.
 - **GPS-denied configuration:** for maze flight. This is the next agreed step.
 - **Review:** `airmouse_sitl.parm` (frame) and `airmouse_provisional_flight.parm`. Both are PROVISIONAL and not flight-approved.
+
+## 10. GPS-denied configuration, staged (PROVISIONAL; Rohit owns the final parameters)
+
+### 10.1 Step 1: hover learning in LOITER, GPS on (2026-10-04, OBSERVED)
+
+Command: `tools/sitl_flight_test.py simulation/sitl/empty_sitl.sdf --mode loiter --hover 60`. Run `logs/phase3-2026-10-04/flight_empty_sitl_005532/`.
+
+The flight was a GUIDED takeoff to 1.5 m, then RC 1–4 set to 1500 (neutral sticks), then LOITER for 65 s, then LAND.
+
+**Learned `MOT_THST_HOVER = 0.4880`.** CTUN `ThH` went from 0.5400 to 0.4880 over 67 s airborne, against the learning filter's 10 s time constant (`AP_MOTORS_THST_HOVER_TC`). ThO averaged 0.4860 over the last 20 s.
+
+This matches the prediction of about 0.488 from §9.4: the thrust-domain hover throttle after ArduPilot's battery and air-density compensation. The raw analytical values would be 0.532 (spin limits 0.15/0.95) or 0.538 (spin limits 0/1). The learned value is recorded in `airmouse_provisional_flight.parm` as a comment and is **not applied**.
+
+| LOITER hover (60 s window) | Value |
+|---|---|
+| Altitude-hold error | mean −1.0 cm, std 0.1 cm, max 1.3 cm |
+| Attitude | roll std 0.02° (peak 0.07°); pitch std 0.05° (peak 0.26°) |
+| Horizontal drift | 2.0 cm |
+| RTF | 0.992 over 126 s |
+| CPU / RSS | gz sim 44 % / 148 MB; arducopter 11 % / 5 MB; MAVProxy 8 % / 87 MB |

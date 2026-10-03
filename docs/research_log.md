@@ -31,3 +31,8 @@ Chronological engineering log. Each entry carries evidence labels: OBSERVED, SOU
   - Rohit's review of the frame parameters and the provisional flight parameters
   - the GPS-denied configuration
   - the NIDAR spec interpretations (room size, footprint convention, marker shape)
+
+## 2026-10-04
+
+- **Hover learning in LOITER (GPS on):** `MOT_THST_HOVER` learned **0.488**, as predicted, which is the thrust-domain value after compensation. It is recorded for Rohit and not applied. The LOITER hover was stable: altitude error max 1.3 cm, drift 2.0 cm. See `phase3-sitl.md` §10.1.
+

@@ -16,3 +16,6 @@ MOT_THST_EXPO   1.0
 #   ((0.7334 - 0.15) / 0.80)^2 = 0.532.
 MOT_THST_HOVER  0.54
 MOT_HOVER_LEARN 2
+# 2026-10-04: LOITER hover learning (GPS on, SITL home 584 m AMSL, SITL battery 12.6 V) converged to
+# MOT_THST_HOVER = 0.488 (run logs/phase3-2026-10-04/flight_empty_sitl_005532). This value is recorded
+# here for Rohit; it is NOT applied. The 0.54 starting value above also flies stably.
