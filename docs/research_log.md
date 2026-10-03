@@ -43,4 +43,10 @@ Chronological engineering log. Each entry carries evidence labels: OBSERVED, SOU
 - **ExternalNav plumbing stub (GROUND-TRUTH-DERIVED, PLUMBING TEST ONLY; to be removed once Doshi's SLAM exists):**
   - It sends MAVLink ODOMETRY (LOCAL_FRD/BODY_FRD) at 30 Hz from Gazebo truth plus noise and drift.
   - With GPS disabled, both EKF3 cores report "is using external nav data". See `phase3-sitl.md` §10.3.
+- **GPS-denied flight (GPS disabled, ExternalNav from the PLUMBING-ONLY stub):**
+  - Takeoff, LOITER 30 s and land all PASS: altitude error max 1.2 cm, drift 0.7 cm. 2198 VISP samples consumed, 0 ignored.
+  - These are plumbing results only, not navigation performance.
+- **ExternalNav loss mid-hover:**
+  - "EKF3 stopped aiding" at +15 s. **No failsafe and no mode change** through +40 s, with the vehicle LOITERing on dead-reckoning. EKF test ratios fell to 0.
+  - **SAFETY FINDING:** a loss of the SLAM feed is not caught by default failsafes. Options (a)–(d) are listed for Rohit. See `phase3-sitl.md` §10.4.
 

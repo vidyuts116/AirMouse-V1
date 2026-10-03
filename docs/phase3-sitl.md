@@ -319,3 +319,52 @@ The stub also sends `SET_GPS_GLOBAL_ORIGIN` (SITL home) every 2 s for 30 s, and 
 
 - The error ArduPilot derives from the covariance is clamped to at least `VISO_POS_M_NSE` (default 0.2 m) and `VISO_YAW_M_NSE` (default 0.2 rad). Small reported covariances therefore do not tighten the EKF below those floors.
 - Samples with `quality < VISO_QUAL_MIN` are ignored.
+
+### 10.4 Step 2c: GPS-denied flight (GPS disabled; ExternalNav from the PLUMBING-ONLY stub)
+
+**Flight:** arm → takeoff 1.5 m → LOITER 30 s → land.
+
+- Command: `tools/sitl_flight_test.py simulation/sitl/empty_sitl.sdf --stub --mode loiter --hover 30 --parm simulation/sitl/airmouse_gps_denied_PLUMBING_TEST.parm --parm simulation/sitl/airmouse_provisional_rangefinder.parm --ready-msg "EKF3 IMU0 is using external nav data"`
+- Run: `logs/phase3-2026-10-04/flight_empty_sitl_011913/`
+- **The navigation data is GROUND-TRUTH-DERIVED (PLUMBING TEST ONLY).** These numbers show that the plumbing works. They do **not** show GPS-denied navigation performance.
+
+| Metric (OBSERVED) | Value |
+|---|---|
+| Arm / takeoff / LOITER / land / disarm | PASS (see the arming note below) |
+| Altitude-hold error (30 s) | mean −0.5 cm, std 0.4 cm, max 1.2 cm; climb overshoot +7.8 cm |
+| Attitude | roll std 0.01° (peak 0.04°), pitch std 0.02° (peak 0.21°) |
+| Horizontal drift (truth) | 0.7 cm |
+| ExternalNav consumed (dataflash VISP) | 2198 samples over 72.4 s, **0 ignored**, quality 100; logged `PErr = AErr = 0.200` (the `VISO_*_M_NSE` floor) |
+| EKF vs ExternalNav input at rest (last 5 s) | EKF PN/PE/PD −0.048/+0.026/−0.026 m vs VISP −0.033/+0.029/−0.021 m |
+| Rangefinder (RFND) | 1.492 m in hover (status Good) |
+| Learned `MOT_THST_HOVER` | 0.4913 (GPS-on LOITER: 0.4880) |
+| RTF / CPU | 0.989; gz sim 49 %, arducopter 9 %, MAVProxy 9 % |
+
+**Arming note:** with ExternalNav the EKF is ready about 15 s after boot, much sooner than with GPS. The first three arm attempts were refused with `Arm: Accels inconsistent` / `Gyros inconsistent`, and the fourth, about 5 s later, succeeded. This is probably the SITL IMU consistency checks not yet settled that early after boot (INFERRED; it was not investigated further).
+
+**Loss of ExternalNav mid-hover:** the stub was stopped permanently 10 s into the LOITER window; FS settings are defaults (`FS_EKF_ACTION` = Land, `FS_EKF_THRESH` 0.8). Run `logs/phase3-2026-10-04/flight_empty_sitl_012051/`.
+
+| Time from loss | ArduPilot (OBSERVED: tlog STATUSTEXT and mode, dataflash) |
+|---|---|
+| 0 s | last VISP sample; the vehicle stays in **LOITER** on inertial dead-reckoning |
+| +15.1 s | `EKF3 IMU0 stopped aiding`, `EKF3 IMU1 stopped aiding` (plus `EKF3 lane switch 1`) |
+| +15 … +40 s | **no EKF failsafe, no mode change, no ERR record.** EKF test ratios fell to 0: SV 0.16 → 0.00, SP 0.01 → 0.00 |
+| +40.4 s | LAND, from **the test script** at the end of the window, not from ArduPilot |
+| +46.1 s | disarmed; then `PreArm: VisOdom: not healthy` |
+
+**What the truth data shows:** the maximum horizontal excursion during the loss was **1.6 cm**, and attitude stayed small (roll/pitch peaks 0.16°). The SITL has no wind and clean IMU noise, so dead-reckoning drift here greatly understates real drift (INFERRED).
+
+**Why no failsafe (SOURCE-CODE VERIFIED, `ArduCopter/ekf_check.cpp:29-75, 140-165`):**
+
+- Copter's EKF failsafe fires when the velocity, position or compass **variances exceed `FS_EKF_THRESH`** (two of them, or velocity at 2× the threshold), **or** when the EKF reports **no position estimate**.
+- With no aiding measurements there are no innovations, so the logged test ratios dropped to zero.
+- The EKF kept reporting a position estimate while dead-reckoning (INFERRED from the absence of a failsafe).
+
+**SAFETY FINDING for Rohit:** with default parameters, a loss of the SLAM/ExternalNav feed did **not** trigger any failsafe within at least 25 s of "stopped aiding". The vehicle kept LOITERing on dead-reckoning, which on real hardware would drift. Options to decide on, none applied:
+
+- (a) a companion-side watchdog. Doshi's node stops publishing → it commands LAND or ALT_HOLD.
+- (b) an onboard Lua script that monitors VISO health (`PreArm: VisOdom: not healthy` shows ArduPilot tracks it) and changes mode.
+- (c) a secondary EKF source set, for example optical flow (`EK3_SRC2_*`), with source switching.
+- (d) review `FS_EKF_THRESH` and the EKF3 dead-reckoning limits.
+
+These need verification in SITL with a drifting IMU or wind (`SIM_WIND_*`, `SIM_ACC*_BIAS`), which would make the dead-reckoning drift realistic.

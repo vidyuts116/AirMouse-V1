@@ -339,7 +339,7 @@ def main():
             log.info("hover", "dataflash CTUN hover throttle", f"ThH {air[0, 2]:.4f} -> {air[-1, 2]:.4f} over "
                      f"{air[-1, 0] - air[0, 0]:.0f} s airborne; ThO mean (last 20 s airborne) "
                      f"{air[air[:, 0] >= air[-1, 0] - 20][:, 1].mean():.4f}", "OBSERVED")
-    if "ground_only" in marks:
+    if "ground_only" in marks or args.stub:
         bins = sorted((run / "logs").glob("*.BIN"))
         if bins:
             from pymavlink import mavutil
@@ -349,12 +349,14 @@ def main():
                 m = df.recv_match(type=["VISP", "XKF1", "MSG"], blocking=False)
                 if m is None:
                     break
+                d = m.to_dict()
                 if m.get_type() == "VISP":
-                    visp.append((m.TimeUS / 1e6, m.PX, m.PY, m.PZ, m.Yaw, m.Ignored, m.Qual))
-                elif m.get_type() == "XKF1" and m.C == 0:
-                    xkf.append((m.TimeUS / 1e6, m.PN, m.PE, m.PD, m.Yaw))
-                else:
-                    msgs.append(m.Message)
+                    visp.append((d["TimeUS"] / 1e6, d["PX"], d["PY"], d["PZ"], d.get("Y", float("nan")),
+                                 d.get("Ign", 0), d.get("Q", -1)))
+                elif m.get_type() == "XKF1" and d.get("C", 0) == 0:
+                    xkf.append((d["TimeUS"] / 1e6, d["PN"], d["PE"], d["PD"], d.get("Yaw", float("nan"))))
+                elif m.get_type() == "MSG":
+                    msgs.append(str(d.get("Message", "")))
             visp, xkf = np.array(visp), np.array(xkf)
             ok &= log.check("plumbing", "VISP (ExternalNav pose) records received and consumed",
                             len(visp) > 0 and visp[:, 5].sum() == 0,
