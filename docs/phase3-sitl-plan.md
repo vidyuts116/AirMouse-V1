@@ -1,6 +1,6 @@
 # AirMouse Phase 3: ArduPilot SITL ↔ Gazebo, groundwork and decisions needed (2026-10-03)
 
-**Status: stopped at decisions.** Nothing has been installed, downloaded or changed. Everything below is a read-only inventory (OBSERVED) or a proposal. The earlier Phase 3 prompt and the "master prompts" were not available in this session, so this plan follows the standard ArduPilot SITL + Gazebo Harmonic approach.
+**Status: decisions confirmed and applied (see docs/phase3-sitl.md).** Original groundwork notes below are kept for history.
 
 ## Inventory (OBSERVED, 2026-10-03)
 

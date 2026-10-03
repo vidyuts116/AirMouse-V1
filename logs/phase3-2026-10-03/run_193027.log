@@ -1,0 +1,21 @@
+AirMouse SITL motor test 2026-10-03T19:30:27: pwm 1300 -> 240.0 rad/s expected; world simulation/sitl/empty_sitl.sdf
+  MAVProxy connected to SITL
+  [PASS] FRAME_CLASS: measured 1 | expected 1 (OBSERVED)
+  [PASS] FRAME_TYPE: measured 18 | expected 18 (OBSERVED)
+  [PASS] SERVO1_FUNCTION: measured 33 | expected 33 (OBSERVED)
+  [PASS] SERVO2_FUNCTION: measured 34 | expected 34 (OBSERVED)
+  [PASS] SERVO3_FUNCTION: measured 35 | expected 35 (OBSERVED)
+  [PASS] SERVO4_FUNCTION: measured 36 | expected 36 (OBSERVED)
+  [PASS] MOT_PWM_MIN: measured 1000 | expected 1000 (OBSERVED)
+  [PASS] MOT_PWM_MAX: measured 2000 | expected 2000 (OBSERVED)
+  [FAIL] motortest 1 (M2 SERVO2 FR CW): only rotor_3 spins: measured rotors spinning: none; means +0.0, +0.0, +0.0, +0.0 | expected rotor_3 only (OBSERVED)
+  [FAIL] motortest 1: rotor_3 sign and speed: measured +0.00 rad/s (n=441) | expected -240.0 ±2 % (OBSERVED)
+  [FAIL] motortest 2 (M1 SERVO1 BR CCW): only rotor_2 spins: measured rotors spinning: none; means -0.0, -0.0, -0.0, -0.0 | expected rotor_2 only (OBSERVED)
+  [FAIL] motortest 2: rotor_2 sign and speed: measured -0.00 rad/s (n=441) | expected +240.0 ±2 % (OBSERVED)
+  [FAIL] motortest 3 (M3 SERVO3 BL CW): only rotor_1 spins: measured rotors spinning: none; means -0.0, -0.0, -0.0, -0.0 | expected rotor_1 only (OBSERVED)
+  [FAIL] motortest 3: rotor_1 sign and speed: measured -0.00 rad/s (n=441) | expected -240.0 ±2 % (OBSERVED)
+  [FAIL] motortest 4 (M4 SERVO4 FL CCW): only rotor_0 spins: measured rotors spinning: none; means -0.0, -0.0, -0.0, -0.0 | expected rotor_0 only (OBSERVED)
+  [FAIL] motortest 4: rotor_0 sign and speed: measured -0.00 rad/s (n=441) | expected +240.0 ±2 % (OBSERVED)
+
+Cleanup: gz sim processes left = 0; run files in logs/phase3-2026-10-03/motortest_193027
+OVERALL: FAIL

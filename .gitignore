@@ -12,3 +12,8 @@ downloads/
 # Large logs: CSV files over 5 MB under logs/ are listed here individually
 # (git cannot ignore by size; check with: find logs -name '*.csv' -size +5M).
 # none at present
+
+# Phase 3 external sources and Python environment (pinned versions recorded in docs/phase3-sitl.md)
+src/ardupilot/
+src/ardupilot_gazebo/
+.venv-ardupilot/

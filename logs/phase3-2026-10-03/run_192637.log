@@ -1,0 +1,33 @@
+AirMouse SITL motor test 2026-10-03T19:26:38: pwm 1300 -> 240.0 rad/s expected; world simulation/sitl/empty_sitl.sdf
+  [FAIL] aborted: End Of File (EOF). Empty string style platform.
+<pexpect.pty_spawn.spawn object at 0x1062f7770>
+command: /Users/arif_svii/Drone/.venv-ardupilot/bin/mavproxy.py
+args: [b'/Users/arif_svii/Drone/.venv-ardupilot/bin/mavproxy.py', b'--master', b'tcp:127.0.0.1:5760', b'--state-basedir', b'/Users/arif_svii/Drone/logs/phase3-2026-10-03/motortest_192637', b'--non-interactive']
+buffer (last 100 chars): ''
+before (last 100 chars): "rt gnureadline as readline\r\n\x1b[1;35mModuleNotFoundError\x1b[0m: \x1b[35mNo module named 'gnureadline'\x1b[0m\r\n"
+after: <class 'pexpect.exceptions.EOF'>
+match: None
+match_index: None
+exitstatus: None
+flag_eof: True
+pid: 82116
+child_fd: 12
+closed: False
+timeout: 60
+delimiter: <class 'pexpect.exceptions.EOF'>
+logfile: None
+logfile_read: <_io.TextIOWrapper name='/Users/arif_svii/Drone/logs/phase3-2026-10-03/motortest_192637/mavproxy.log' mode='w' encoding='UTF-8'>
+logfile_send: None
+maxread: 2000
+ignorecase: False
+searchwindowsize: None
+delaybeforesend: 0.05
+delayafterclose: 0.1
+delayafterterminate: 0.1
+searcher: searcher_re:
+    0: re.compile('STABILIZE>')
+    1: re.compile('Detected vehicle')
+    2: re.compile('online system')
+
+Cleanup: gz sim processes left = 0; run files in logs/phase3-2026-10-03/motortest_192637
+OVERALL: FAIL

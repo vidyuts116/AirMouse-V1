@@ -1,0 +1,20 @@
+# AirMouse V1 ArduCopter SITL parameters (loaded after Tools/autotest/default_params/copter.parm)
+# FOR ROHIT'S REVIEW: frame and output mapping only. No tuning or flight parameters are set here.
+#
+# Frame: quad, "BetaFlight X reversed" (props-out). Verified against Copter-4.6.3
+# libraries/AP_Motors/AP_Motors_Class.h (MOTOR_FRAME_QUAD = 1, MOTOR_FRAME_TYPE_BF_X_REV = 18) and
+# AP_MotorsMatrix.cpp:639-650:
+#   M1 135 deg back-right CCW (test order 2)   -> SERVO1 -> Gazebo rotor_2 (ccw)
+#   M2  45 deg front-right CW (test order 1)   -> SERVO2 -> Gazebo rotor_3 (cw)
+#   M3 -135 deg back-left  CW (test order 3)   -> SERVO3 -> Gazebo rotor_1 (cw)
+#   M4 -45 deg front-left  CCW (test order 4)  -> SERVO4 -> Gazebo rotor_0 (ccw)
+FRAME_CLASS     1
+FRAME_TYPE      18
+# Motor outputs on SERVO1-4 (ArduPilot defaults, set explicitly for review)
+SERVO1_FUNCTION 33
+SERVO2_FUNCTION 34
+SERVO3_FUNCTION 35
+SERVO4_FUNCTION 36
+# PWM range must match the Gazebo bridge: 1000-2000 us -> 0-800 rad/s (simulation/sitl/*_sitl.sdf)
+MOT_PWM_MIN     1000
+MOT_PWM_MAX     2000

@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File [35m"/Users/arif_svii/Drone/.venv-ardupilot/bin/mavproxy.py"[0m, line [35m33[0m, in [35m<module>[0m
+    from MAVProxy.modules.lib import rline
+  File [35m"/Users/arif_svii/Drone/.venv-ardupilot/lib/python3.14/site-packages/MAVProxy/modules/lib/rline.py"[0m, line [35m13[0m, in [35m<module>[0m
+    import gnureadline as readline
+[1;35mModuleNotFoundError[0m: [35mNo module named 'gnureadline'[0m

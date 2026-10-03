@@ -1,0 +1,33 @@
+AirMouse SITL motor test 2026-10-03T19:27:02: pwm 1300 -> 240.0 rad/s expected; world simulation/sitl/empty_sitl.sdf
+  [FAIL] aborted: Timeout exceeded.
+<pexpect.pty_spawn.spawn object at 0x106d7b770>
+command: /Users/arif_svii/Drone/.venv-ardupilot/bin/mavproxy.py
+args: [b'/Users/arif_svii/Drone/.venv-ardupilot/bin/mavproxy.py', b'--master', b'tcp:127.0.0.1:5760', b'--state-basedir', b'/Users/arif_svii/Drone/logs/phase3-2026-10-03/motortest_192702', b'--non-interactive']
+buffer (last 100 chars): "ad /SRTM3/filelist_python : 'utf-8' codec can't decode byte 0x80 in position 0: invalid start byte\r\n"
+before (last 100 chars): "ad /SRTM3/filelist_python : 'utf-8' codec can't decode byte 0x80 in position 0: invalid start byte\r\n"
+after: <class 'pexpect.exceptions.TIMEOUT'>
+match: None
+match_index: None
+exitstatus: None
+flag_eof: False
+pid: 82155
+child_fd: 12
+closed: False
+timeout: 60
+delimiter: <class 'pexpect.exceptions.EOF'>
+logfile: None
+logfile_read: <_io.TextIOWrapper name='/Users/arif_svii/Drone/logs/phase3-2026-10-03/motortest_192702/mavproxy.log' mode='w' encoding='UTF-8'>
+logfile_send: None
+maxread: 2000
+ignorecase: False
+searchwindowsize: None
+delaybeforesend: 0.05
+delayafterclose: 0.1
+delayafterterminate: 0.1
+searcher: searcher_re:
+    0: re.compile('STABILIZE>')
+    1: re.compile('Detected vehicle')
+    2: re.compile('online system')
+
+Cleanup: gz sim processes left = 0; run files in logs/phase3-2026-10-03/motortest_192702
+OVERALL: FAIL

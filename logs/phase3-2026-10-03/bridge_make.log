@@ -1,0 +1,8 @@
+[ 66%] Building CXX object CMakeFiles/ArduPilotPlugin.dir/Users/arif_svii/Drone/src/ardupilot_gazebo/src/ArduPilotPlugin.cc.o
+[ 66%] Building CXX object CMakeFiles/ArduPilotPlugin.dir/Users/arif_svii/Drone/src/ardupilot_gazebo/src/SocketUDP.cc.o
+[ 66%] Building CXX object CMakeFiles/AirMouseActuatorsBridge.dir/ActuatorsBridge.cc.o
+[ 66%] Building CXX object CMakeFiles/ArduPilotPlugin.dir/Users/arif_svii/Drone/src/ardupilot_gazebo/src/Util.cc.o
+[ 83%] Linking CXX shared library libAirMouseActuatorsBridge.dylib
+[ 83%] Built target AirMouseActuatorsBridge
+[100%] Linking CXX shared library libArduPilotPlugin.dylib
+[100%] Built target ArduPilotPlugin
