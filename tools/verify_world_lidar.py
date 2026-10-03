@@ -117,33 +117,58 @@ def verify(ctx, name):
     ranges = np.array([rr for _, rr in scans])
     ranges[~np.isfinite(ranges)] = np.inf
     expected = ray_cast(x, y, beam + yaw, meta["walls_cx_cy_lx_ly"], cfg["rmin"], cfg["rmax"])
+    # Beam-angle tolerance: at grazing incidence range is very sensitive to angle (dr/dtheta = r*cot(incidence)),
+    # so each beam is compared with the ray-cast band over +/- half a beam step.
+    delta = 0.5 * abs(h0[3])
+    band = np.stack([ray_cast(x, y, beam + yaw + o, meta["walls_cx_cy_lx_ly"], cfg["rmin"], cfg["rmax"])
+                     for o in np.linspace(-delta, delta, 21)])
+    lo, hi = band.min(axis=0), band.max(axis=0)
+    any_inf = ~np.isfinite(band).all(axis=0)
     finite_frac = np.isfinite(ranges).mean(axis=0)
     meas = np.where(finite_frac >= 0.5, np.nanmean(np.where(np.isfinite(ranges), ranges, np.nan), axis=0), np.inf)
-    both = np.isfinite(meas) & np.isfinite(expected)
-    err = meas - expected
-    match = (both & (np.abs(err) <= 0.05)) | (~np.isfinite(meas) & ~np.isfinite(expected))
+    match = ((np.isfinite(meas) & np.isfinite(lo) & (meas >= lo - 0.05) & (meas <= hi + 0.05))
+             | (~np.isfinite(meas) & any_inf))
     frac = match.mean()
-    ok &= log.check(name, "beams matching ray cast (finite within 5 cm, or both no-return)", frac >= 0.98,
+    ok &= log.check(name, "beams within ray-cast band (±half beam step, ±5 cm; or no-return)", frac >= 0.98,
                     f"{match.sum()}/{len(match)} = {frac * 100:.1f} % ({int(np.isfinite(expected).sum())} beams expect a "
-                    f"return)", ">= 98 % (ANALYTICAL ray cast vs OBSERVED)", "OBSERVED")
+                    f"return; band ±{math.degrees(delta):.2f} deg)", ">= 98 % (ANALYTICAL ray cast vs OBSERVED)", "OBSERVED")
+    # Implied beam-angle error: offset (within +/-3 deg) whose ray cast best explains each finite measurement.
+    offs = np.radians(np.linspace(-3, 3, 601))
+    fine = np.stack([ray_cast(x, y, beam + yaw + o, meta["walls_cx_cy_lx_ly"], cfg["rmin"], cfg["rmax"]) for o in offs])
+    fin = np.isfinite(meas)
+    if fin.any():
+        diff = np.abs(np.where(np.isfinite(fine[:, fin]), fine[:, fin], 1e9) - meas[fin])
+        implied = np.degrees(offs[np.argmin(diff, axis=0)])
+        sens = (hi - lo)[fin] / 2
+        steep = sens > 0.05
+        log.info(name, "implied beam-angle error (finite returns)",
+                 f"all: median |off| {np.median(np.abs(implied)):.2f} deg; grazing beams (band > ±5 cm, n={int(steep.sum())}): "
+                 f"max |off| {np.abs(implied[steep]).max() if steep.any() else 0:.2f} deg", "INFERRED")
     bad = np.where(~match)[0]
     if len(bad):
-        log.info(name, "non-matching beams (deg: measured / expected m)",
-                 ", ".join(f"{math.degrees(beam[i]):+.0f}: {meas[i]:.3f}/{expected[i]:.3f}" for i in bad[:12])
+        log.info(name, "beams outside band (deg: measured / band m)",
+                 ", ".join(f"{math.degrees(beam[i]):+.0f}: {meas[i]:.3f}/{lo[i]:.3f}-{hi[i]:.3f}" for i in bad[:12])
                  + (" …" if len(bad) > 12 else ""), "OBSERVED")
-    good = both & match
+    well = np.isfinite(meas) & np.isfinite(hi) & ((hi - lo) / 2 <= 0.01)
+    err = meas - expected
+    np.savetxt(log.dir / f"{name}_beams.csv",
+               np.column_stack([np.degrees(beam), meas, expected, lo, hi, finite_frac, match, well]), delimiter=",",
+               fmt="%.6g", header="beam_deg,measured_mean_m,expected_m,band_lo_m,band_hi_m,finite_fraction,match,"
+               "well_conditioned", comments="")
+    good = well
     if good.any():
         bias = float(err[good].mean())
-        ok &= log.check(name, "range bias over matched returns", abs(bias) <= 0.005,
+        ok &= log.check(name, "range bias, well-conditioned beams (band <= ±1 cm)", abs(bias) <= 0.005,
                         f"{bias * 1e3:+.2f} mm (n={int(good.sum())} beams, max |err| {np.abs(err[good]).max() * 1e3:.1f} mm)",
                         "|bias| <= 5 mm", "OBSERVED")
         single = (ranges[:, good] - expected[good])
         noise = float(np.std(single[np.isfinite(single)]))
-        ok &= log.check(name, "single-scan noise / configured sigma", 0.5 <= noise / cfg["sigma"] <= 2.0,
+        ok &= log.check(name, "single-scan noise / configured sigma (well-conditioned beams)",
+                        0.5 <= noise / cfg["sigma"] <= 2.0,
                         f"{noise * 1e3:.2f} mm / {cfg['sigma'] * 1e3:.0f} mm = {noise / cfg['sigma']:.2f}", "0.5-2.0",
                         "OBSERVED")
     else:
-        log.info(name, "range bias / noise", "no finite returns expected (open world)", "OBSERVED")
+        log.info(name, "range bias / noise", "no well-conditioned returns expected (open world)", "OBSERVED")
     ctx.rows.append((name, "PASS" if ok else "FAIL", len(meta["walls_cx_cy_lx_ly"]),
                      f"{match.sum()}/{len(match)}", f"{bias * 1e3:+.2f} mm" if good.any() else "—",
                      f"{noise * 1e3:.1f} mm" if good.any() else "—", f"{rate:.2f} Hz"))
