@@ -1,0 +1,21 @@
+
+Stage 6  World nidar_maze
+  [PASS] generated from current baseline: measured 21626e644770873e… | expected 21626e644770873e… (OBSERVED)
+  [PASS] gz sdf -k: measured Valid. | expected Valid. (OBSERVED)
+  [PASS] maze collisions = wall boxes: measured 40 | expected 40 (OBSERVED)
+  [PASS] launch pad + survivor markers non-colliding (visual only): measured 7 models, colliding: none | expected none colliding (OBSERVED)
+  [INFO] launch pad: 0.61 x 0.61 m at (-6.725 -6.725 0.0025 0 0 0); spawn (-6.725, -6.725) (OBSERVED)
+  [PASS] LiDAR rate (sim time): measured 10.03 Hz over 2.29 s | expected 10 Hz ±10 % (OBSERVED)
+  [INFO] vehicle rest pose: x -6.7250, y -6.7250, z 0.0400 m, yaw +0.000 deg (spawn -6.725, -6.725); 40 wall boxes (OBSERVED)
+  [PASS] beams within ray-cast band (±half beam step, ±5 cm; or no-return): measured 360/360 = 100.0 % (278 beams expect a return; band ±0.50 deg) | expected >= 98 % (ANALYTICAL ray cast vs OBSERVED) (OBSERVED)
+  [INFO] implied beam-angle error (finite returns): all: median |off| 0.26 deg; grazing beams (band > ±5 cm, n=3): max |off| 0.12 deg (INFERRED)
+  [PASS] range bias, well-conditioned beams (band <= ±1 cm): measured +0.17 mm (n=235 beams, max |err| 8.6 mm) | expected |bias| <= 5 mm (OBSERVED)
+  [PASS] single-scan noise / configured sigma (well-conditioned beams): measured 10.10 mm / 10 mm = 1.01 | expected 0.5-2.0 (OBSERVED)
+
+Cleanup: gz sim processes left = 0; GZ_IP=127.0.0.1
+
+| World | Result | Wall boxes | Beams matching | Range bias | Single-scan noise | LiDAR rate |
+|---|---|---|---|---|---|---|
+| nidar_maze | PASS | 40 | 360/360 | +0.17 mm | 10.1 mm | 10.03 Hz |
+
+OVERALL: PASS
