@@ -18,8 +18,16 @@ Chronological engineering log. Each entry carries evidence labels: OBSERVED, SOU
   - Python 3.14 fixes: `setuptools<81` (for `pkg_resources`) and `gnureadline`.
   - See `phase3-sitl.md`.
 - **First SITL takeoff (PROVISIONAL params): UNSTABLE.** The vehicle flipped in pitch, then SITL hit `SIGILL` in `EKFGSF_yaw::predict`. Root cause: the AirMouse IMU reports FLU, while `ArduPilotPlugin` passes IMU data raw and assumes FRD (SOURCE-CODE VERIFIED). Pitch and yaw rates and accel z reached ArduPilot inverted; at rest AccZ was +9.817 (OBSERVED). Proposed fix: rotate the IMU sensor by 180° roll in SITL worlds only. Not applied; the campaign stopped per instruction. Regression after the attempt: PASS.
+- **SITL IMU-frame fix (approved) and flights 2–3: STABLE.**
+  - **Fix:** the SITL worlds keep the FLU IMU on `/airmouse/imu` and add an FRD IMU (roll 180°, same noise) for ArduPilotPlugin.
+  - **Ground checks PASS:** at rest AccZ −9.815, and when held 10° nose-up ArduPilot reports pitch +10.00°. `/airmouse/imu` still reads az +9.818.
+  - **empty_sitl:** takeoff 1.5 m, hover 30 s, land. Altitude error max 1.0 cm, attitude std 0.01°, drift 0.2 cm, RTF 1.000.
+  - **NIDAR maze:** takeoff and hover. Altitude error max 1.2 cm, attitude std 0.02°, RTF 0.997.
+  - **Hover speed:** the hover PWM gives ω 586.68–586.70 rad/s, against the analytical 586.743.
+  - **Hover learning:** it did not run, because GUIDED's desired vertical velocity is never exactly zero (OBSERVED and SOURCE-CODE VERIFIED). ThO 0.4877 is consistent with 0.532 after ArduPilot's battery and air-density compensation (INFERRED).
+  - **Regression:** PASS. See `phase3-sitl.md` §9.
 - **Open decisions:**
-  - approve the SITL IMU-frame fix and the re-fly
+  - hover-learning procedure (ALT_HOLD/LOITER) or a fixed `MOT_THST_HOVER` ≈ 0.49; takeoff overshoot
   - Rohit's review of the frame parameters and the provisional flight parameters
   - the GPS-denied configuration
   - the NIDAR spec interpretations (room size, footprint convention, marker shape)

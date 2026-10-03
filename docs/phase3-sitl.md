@@ -1,6 +1,6 @@
 # AirMouse Phase 3: ArduPilot SITL ↔ Gazebo (2026-10-03)
 
-**Status: SITL ↔ Gazebo link working; motortest PASS on all four motors. First takeoff (PROVISIONAL params) was UNSTABLE: the vehicle flipped in pitch and SITL crashed. Root cause: the IMU frame convention in the SITL world (§8). Campaign stopped as instructed; the fix awaits approval.**
+**Status: takeoff → 30 s hover → land is STABLE in `empty_sitl`, and takeoff + hover is STABLE in the NIDAR maze (OBSERVED), using PROVISIONAL sim-only parameters with the approved FRD-IMU fix (§9). Attempt 1, before the fix, is documented in §8. Hover learning does not run in GUIDED (§9.4). Next decisions are Rohit's (§9.6).**
 
 Decisions applied, as confirmed by the user and following the recommendations in `docs/phase3-sitl-plan.md`:
 
@@ -151,3 +151,61 @@ Takeoff and hover need flight parameters that are Rohit's to set. None were chan
 - the NIDAR-maze takeoff
 
 **Regression after the attempt:** `tools/airmouse_regression.py` run `logs/regression-2026-10-03/run_205302.log`: **PASS** for Stages 0–10, baseline `21626e64…a88f` unchanged (OBSERVED).
+
+## 9. IMU-frame fix and flights 2–3 (2026-10-03, approved)
+
+### 9.1 Fix, in generated SITL worlds only (`tools/make_sitl_world.py`)
+
+- **ROS-facing IMU:** the FLU IMU `imu_sensor` on `/airmouse/imu` (200 Hz) is kept **unchanged**, honouring the ROS/Doshi interface contract.
+- **ArduPilot IMU:** a second IMU, `imu_sensor_frd`, was added on `base_link` with `<pose degrees="true">0 0 0 180 0 0</pose>`, which gives FRD as in the iris reference. It has **identical noise** (gyro σ 0.0005 rad/s, bias σ 0.0001; accel σ 0.007 m/s², bias σ 0.005) and no custom topic, so it publishes on the default scoped topic `ArduPilotPlugin` uses. `ArduPilotPlugin` `<imuName>` now points at `base_link::imu_sensor_frd`.
+- **Rate:** the new IMU runs at **1000 Hz**, my choice, matching the iris reference, because the plugin reads the latest IMU sample every 1 ms physics step. The noise configuration is identical.
+- **Baseline:** the baseline SDF is unchanged (`21626e64…a88f`). Physics parameters changed: none.
+
+### 9.2 Ground checks before flight (`tools/sitl_ground_check.py`, run `logs/phase3-2026-10-03/groundcheck_210352/`; all PASS, OBSERVED)
+
+A `set_pose`-tilted vehicle is unconstrained and falls, so its accelerometers read about 0 g. The nose-up case therefore uses a **diagnostic held world**, `empty_sitl_hold_pitch10.sdf` (generated with `--hold-pitch-deg 10`; never flown), where `base_link` is fixed to the world at 0.5 m, pitched 10° nose-up.
+
+| Case | ArduPilot RAW_IMU (FRD) | ArduPilot ATTITUDE | `/airmouse/imu` (FLU) |
+|---|---|---|---|
+| level, at rest | AccX +0.000, AccY +0.000, **AccZ −9.815** m/s²; gyro 0 (expected AccZ −9.81) | roll −0.00°, pitch −0.00° | ax −0.007, **az +9.818** m/s² |
+| held 10° nose-up | **AccX +1.696**, AccZ −9.660 m/s² (expected +g·sin 10° = +1.703 and −g·cos 10° = −9.661) | **pitch +10.00°** (ArduPilot convention: nose-up positive), roll +0.00° | ax +1.711, az +9.657 m/s² (expected +1.703 / +9.661) |
+
+### 9.3 Flight results (PROVISIONAL parameters `airmouse_provisional_flight.parm`; ground truth from Gazebo poses)
+
+Each flight was GUIDED → arm → `takeoff 1.5` → hover 35 s, with the last 30 s analysed after 5 s of settling → LAND → auto-disarm. All values are OBSERVED.
+
+| Metric | `empty_sitl` (run `flight_empty_sitl_210528`) | NIDAR maze (run `flight_nidar_maze_sitl_210844`) |
+|---|---|---|
+| Arm / takeoff / hover / land / disarm | PASS / PASS / **stable** / PASS / PASS | PASS / PASS / **stable** / PASS / PASS |
+| Climb overshoot above target (1.540 m) | +7.9 cm | +7.5 cm |
+| Altitude-hold error over 30 s | mean −0.9 cm, std 0.0 cm, max \|err\| 1.0 cm | mean −1.0 cm, std 0.1 cm, max \|err\| 1.2 cm |
+| Attitude oscillation | roll std 0.01° (peak 0.04°), pitch std 0.01° (peak 0.03°); roll p-p 0.07°; dominant 0.43 Hz | roll std 0.02° (peak 0.05°), pitch std 0.02° (peak 0.06°); roll p-p 0.10°; dominant 0.43 Hz |
+| Yaw drift / horizontal drift | 0.02° / 0.2 cm | 0.05° / 0.4 cm |
+| Hover PWM (mean of 4 motors, dataflash RCOU) | 1733.3 µs → ω 586.68 rad/s | 1733.4 µs → ω 586.70 rad/s |
+| Real-time factor (sim/wall) | 1.000 over 95 s | 0.997 over 95 s |
+| Mean CPU (100 % = 1 core) / peak RSS | gz sim 35 % / 187 MB; arducopter 7 % / 5 MB; MAVProxy 6 % / 92 MB | gz sim 40 % / 228 MB; arducopter 9 % / 5 MB; MAVProxy 6 % / 92 MB |
+
+The hover PWM matches the ANALYTICAL exact-hover speed of 586.743 rad/s (1733.4 µs) to 0.01 %.
+
+### 9.4 Hover throttle and `MOT_THST_HOVER` learning
+
+- **Learning did not run in either flight.** The learned value equals the initial 0.5400 (read back after disarm), and dataflash CTUN `ThH` is 0.5400 throughout (OBSERVED).
+- **Why (SOURCE-CODE VERIFIED, `ArduCopter/Attitude.cpp:29-58`):** `update_throttle_hover()` returns early unless the desired vertical velocity is *exactly* zero (`is_zero(pos_control->get_vel_desired_cms().z)`). In GUIDED position hold, the logged desired vertical velocity (PSCD.DVD) is **1.29e-5 m/s on all 200 hover samples, never exactly zero** (OBSERVED). Learning therefore needs an ALT_HOLD or LOITER hover with neutral sticks. That is a test-procedure decision for Rohit.
+- **Actual hover throttle, thrust domain:** CTUN `ThO` = **0.4877** in both worlds (OBSERVED).
+- **Comparison with the analytical values:**
+  - The raw thrust fraction needed at hover is **0.5319**, using MOT_SPIN_MIN/MAX 0.15/0.95 with EXPO 1 (`AP_Motors_Thrust_Linearization.cpp:101-130`). It would be 0.538 with spin limits 0/1.
+  - ArduPilot multiplies `ThO` by a compensation gain (`get_compensation_gain()`, `:186-202`): 1/lift_max for the battery, times 1/air-density ratio.
+  - Battery: SITL 12.6 V / `MOT_BAT_VOLT_MAX` 12.8 V gives lift_max = 0.969, i.e. ×1.032 (ANALYTICAL).
+  - The remaining factor implied by the data, 0.5319 / 0.4877 / 1.032 = 1.057, corresponds to an air-density ratio of about 0.946. That is ISA density at the 584 m AMSL SITL home (INFERRED; ArduPilot's exact density estimate was not checked).
+- **Interpretation:** a learned `MOT_THST_HOVER` would converge to about **0.488** at this SITL home altitude and battery voltage, not 0.538 or 0.532 (INFERRED).
+
+### 9.5 Regression after the flights
+
+`logs/regression-2026-10-03/run_211042.log`: **PASS** for Stages 0–10. One transient service reply was retried successfully, which the tool handles by design. Baseline `21626e64…a88f` unchanged (OBSERVED).
+
+### 9.6 Decisions for Rohit (nothing applied)
+
+- **Hover learning:** whether to run hover learning in ALT_HOLD/LOITER, or set `MOT_THST_HOVER` ≈ 0.49 directly for this SITL configuration (home altitude and battery model). Note that 0.54 already flies stably.
+- **Takeoff overshoot:** whether to tune the +7.5–7.9 cm overshoot. Gains are still ArduPilot defaults.
+- **GPS-denied configuration:** for maze flight. This is the next agreed step.
+- **Review:** `airmouse_sitl.parm` (frame) and `airmouse_provisional_flight.parm`. Both are PROVISIONAL and not flight-approved.

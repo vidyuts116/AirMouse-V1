@@ -5,7 +5,13 @@ Injects into the `airmouse` model, without touching any physics:
   * ArduPilotPlugin (ardupilot_gazebo, JSON/UDP 9002, lock-step) with COMMAND channels
   * airmouse::ActuatorsBridge (src/airmouse_sitl_bridge): Doubles -> gz.msgs.Actuators
   * a diagnostic JointStatePublisher (/airmouse/diagnostic/joint_state, 200 Hz) for motor tests
-and moves the IMU from /airmouse/imu to its default scoped topic, which ArduPilotPlugin requires.
+  * a second IMU `imu_sensor_frd` for ArduPilotPlugin: same link and noise as `imu_sensor`, rotated 180 deg
+    about roll (aircraft FRD frame, as in the ardupilot_gazebo iris reference), on its default scoped topic.
+    ArduPilotPlugin passes IMU data to SITL unchanged and assumes FRD (ArduPilotPlugin.cc:1732-1750) and
+    always subscribes to the default topic (ArduPilotPlugin.cc:1165). The original FLU IMU on /airmouse/imu
+    is kept unchanged (ROS interface contract).
+Option --hold-pitch-deg D writes a DIAGNOSTIC ground-check world: base_link fixed to the world at 0.5 m,
+pitched D degrees nose-up (aircraft convention), so the IMUs see a steady tilt. Never fly that world.
 
 Motor map (ArduPilot FRAME_CLASS=1 Quad, FRAME_TYPE=18 BF_X_REV; verified against
 Copter-4.6.3 libraries/AP_Motors/AP_MotorsMatrix.cpp:639-650):
@@ -18,6 +24,8 @@ PWM 1000-2000 us maps linearly to 0-800 rad/s (= maxRotVelocity).
 
 import argparse
 import hashlib
+import math
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -43,7 +51,7 @@ def sitl_block():
         "<have_32_channels>0</have_32_channels>\n"
         '        <modelXYZToAirplaneXForwardZDown degrees="true">0 0 0 180 0 0</modelXYZToAirplaneXForwardZDown>\n'
         '        <gazeboXYZToNED degrees="true">0 0 0 180 0 90</gazeboXYZToNED>\n'
-        "        <imuName>base_link::imu_sensor</imuName>\n"
+        "        <imuName>base_link::imu_sensor_frd</imuName>\n"
         + "".join(controls) +
         "      </plugin>\n"
         '      <plugin filename="AirMouseActuatorsBridge" name="airmouse::ActuatorsBridge">'
@@ -58,8 +66,10 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("world", nargs="?", default=str(ROOT / "simulation" / "worlds" / "empty.sdf"))
     parser.add_argument("--out", default=str(ROOT / "simulation" / "sitl"))
+    parser.add_argument("--hold-pitch-deg", type=float, default=None,
+                        help="diagnostic: hold the vehicle fixed at 0.5 m, pitched this many degrees nose-up")
     args = parser.parse_args()
-    src = Path(args.world)
+    src = Path(args.world).resolve()
     text = src.read_text()
     start = text.index('<model name="airmouse"')
     end = text.index("    </model>", start)       # closing tag of the airmouse model (4-space indent)
@@ -67,13 +77,33 @@ def main():
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     dst = out / f"{src.stem}_sitl.sdf"
-    # ArduPilotPlugin subscribes to the IMU's DEFAULT scoped topic (scopedName(imu) + "/imu",
-    # ardupilot_gazebo ArduPilotPlugin.cc:1165) and ignores a custom <topic>. In SITL worlds only, drop the
-    # custom IMU topic so the IMU publishes where the plugin listens. Not a physics change.
-    imu_topic = "<topic>/airmouse/imu</topic>"
-    assert text.count(imu_topic) == 1, "expected exactly one custom IMU topic in the source world"
+    # Second IMU (FRD) for ArduPilotPlugin: copy of the FLU IMU element (same noise), renamed, rotated
+    # 180 deg about roll, 1000 Hz, no custom topic (the plugin uses the default scoped topic).
+    m = re.search(r'<sensor name="imu_sensor" type="imu">.*?</sensor>', text, flags=re.S)
+    assert m and text.count('<sensor name="imu_sensor" type="imu">') == 1, "expected exactly one imu_sensor"
+    frd = m.group(0).replace('<sensor name="imu_sensor" type="imu">',
+                             '<sensor name="imu_sensor_frd" type="imu"><pose degrees="true">0 0 0 180 0 0</pose>')
+    frd = re.sub(r"<update_rate>[^<]*</update_rate>", "<update_rate>1000</update_rate>", frd, count=1)
+    frd, k = re.subn(r"<topic>[^<]*</topic>", "", frd)
+    assert k == 1
+    frd_block = ("        <!-- ArduPilot IMU (generated): FRD copy of imu_sensor, same noise, 1000 Hz, default topic. -->\n"
+                 f"        {frd}\n")
     out_text = text[:end] + sitl_block() + text[end:]
-    out_text = out_text.replace(imu_topic, "<!-- IMU on default scoped topic for ArduPilotPlugin -->")
+    i = out_text.index('<link name="base_link">')
+    j = out_text.index("      </link>", i)
+    out_text = out_text[:j] + frd_block + out_text[j:]
+    if args.hold_pitch_deg is not None:
+        # SDF rpy is about the model's FLU axes: nose-up is a NEGATIVE rotation about +y.
+        pitch = -math.radians(args.hold_pitch_deg)
+        out_text, k = re.subn(r'(<model name="airmouse"[^>]*>\s*<pose>)([^<]*)(</pose>)',
+                              lambda mm: mm.group(1) + " ".join(mm.group(2).split()[:2]) + f" 0.5 0 {pitch:.6f} 0"
+                              + mm.group(3), out_text, count=1)
+        assert k == 1
+        end2 = out_text.index("    </model>", out_text.index('<model name="airmouse"'))
+        out_text = (out_text[:end2] + "      <!-- DIAGNOSTIC ONLY: vehicle held fixed for IMU sign checks. -->\n"
+                    '      <joint name="ground_check_hold" type="fixed"><parent>world</parent>'
+                    "<child>base_link</child></joint>\n" + out_text[end2:])
+        dst = out / f"{src.stem}_sitl_hold_pitch{args.hold_pitch_deg:g}.sdf"
     dst.write_text(out_text)
     print(f"{dst.relative_to(ROOT)} from {src.relative_to(ROOT)} "
           f"(source sha256 {hashlib.sha256(src.read_bytes()).hexdigest()[:8]})")
