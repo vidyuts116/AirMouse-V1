@@ -1,6 +1,6 @@
 # AirMouse Phase 3: ArduPilot SITL ↔ Gazebo (2026-10-03)
 
-**Status: SITL ↔ Gazebo link working; the motor-order check PASSES on all four motors (OBSERVED). Stopped before takeoff:** flight parameters need Rohit's decision (§7).
+**Status: SITL ↔ Gazebo link working; motortest PASS on all four motors. First takeoff (PROVISIONAL params) was UNSTABLE: the vehicle flipped in pitch and SITL crashed. Root cause: the IMU frame convention in the SITL world (§8). Campaign stopped as instructed; the fix awaits approval.**
 
 Decisions applied, as confirmed by the user and following the recommendations in `docs/phase3-sitl-plan.md`:
 
@@ -108,3 +108,46 @@ Takeoff and hover need flight parameters that are Rohit's to set. None were chan
 2. Attitude steps.
 3. Position hold in `nidar_maze`.
 4. Add a regression Stage 11 for SITL.
+
+## 8. Takeoff attempt 1 (2026-10-03 19:56): UNSTABLE, stopped as instructed
+
+**Setup:**
+
+- Parameter files: `copter.parm`, then `airmouse_sitl.parm`, then **`airmouse_provisional_flight.parm`**. The last one is PROVISIONAL, for Rohit's review, not flight-approved, and sim-only. It sets `MOT_THST_EXPO 1.0`, `MOT_THST_HOVER 0.54` and `MOT_HOVER_LEARN 2`; gains and GPS stay at SITL defaults.
+- World `simulation/sitl/empty_sitl.sdf`, test `tools/sitl_flight_test.py`.
+- Run files: `logs/phase3-2026-10-03/flight_empty_sitl_195644/`, containing `mavproxy.log`, `mav.tlog`, the dataflash log `logs/00000001.BIN`, `arducopter.log` and `arducopter_crash_195740.ips`.
+
+**What happened (OBSERVED):**
+
+1. EKF3 reached "using GPS", GUIDED mode was set, and arming succeeded (`COMPONENT_ARM_DISARM: ACCEPTED`). `takeoff 1.5` was accepted.
+2. The vehicle climbed fast. The first Gazebo truth sample at or above the target read **z = 2.20 m**, against a target of 1.54 m.
+3. It then **flipped in pitch**, with roll staying controlled:
+   - IMU pitch rate GyrY reached −143 to −155 °/s.
+   - ATT roll and pitch swung through ±180°.
+   - The motor outputs saturated, split front/back: front motors C2/C4 ≈ 1947–1949 µs, rear motors C1/C3 ≈ 1150–1224 µs. The controller was demanding nose-up while the measured rate kept going nose-down, which is **positive feedback on pitch**.
+4. About 0.4 s later, ArduCopter SITL **crashed** with `SIGILL` (EXC_BAD_INSTRUCTION) in `EKFGSF_yaw::predict` ← `NavEKF3_core::UpdateFilter` ← `AP_AHRS::update_EKF3`. This is most likely ArduPilot's floating-point-exception trap on non-finite values during the tumble (INFERRED). It is a consequence of the flip, not its cause.
+5. Because of lock-step, Gazebo sim time stopped and the test script hung. That was a tool bug, now fixed: there are wall-clock limits, and the script detects a SITL exit.
+
+**Root cause: IMU frame convention in the SITL world.** This is a configuration error in `make_sitl_world.py`, not gains or physics.
+
+- `ArduPilotPlugin.cc:1732-1750` (SOURCE-CODE VERIFIED) passes the IMU's linear acceleration and angular velocity to SITL **unchanged** and assumes the IMU is already in the aircraft frame: x forward, y right, z down (FRD). The reference iris model therefore mounts its IMU sensor with `<pose degrees="true">0 0 0 180 0 0</pose>`.
+- The AirMouse IMU has no sensor pose, so it reports in the model frame, FLU. ArduPilot therefore received y and z axes with the **wrong sign**:
+  - pitch rate and yaw rate were inverted, which gives the pitch runaway; yaw is slower, with low authority
+  - roll rate was correct, which is why roll stayed controlled
+- At rest the dataflash log shows `IMU AccZ = +9.817 m/s²`. A correctly oriented FRD accelerometer reads −9.81 at rest (OBSERVED).
+- The motor map was **not** the cause: motortest verified the positions and spin directions (§4).
+
+**Proposed fix, not applied, awaiting approval to re-fly:** in **SITL worlds only**, `make_sitl_world.py` adds `<pose degrees="true">0 0 0 180 0 0</pose>` to the IMU sensor, exactly as in the iris reference. This changes only the sensor's reporting frame. There are no physics, gain or baseline changes. The baseline IMU keeps FLU and its Stage 10 checks.
+
+**Verification before any new takeoff, proposed:**
+
+1. On the ground, the logged `IMU AccZ` should be about −9.81 and ATT should be level.
+2. A hand-checked rate sign: tilt the model with `set_pose` and check the GyrY sign.
+3. Only then repeat takeoff 1.5 m, hover 30 s and land.
+
+**Not done, because the campaign stopped on instability:**
+
+- altitude-hold error, attitude oscillation, the learned `MOT_THST_HOVER` and CPU/RAM/RTF in hover
+- the NIDAR-maze takeoff
+
+**Regression after the attempt:** `tools/airmouse_regression.py` run `logs/regression-2026-10-03/run_205302.log`: **PASS** for Stages 0–10, baseline `21626e64…a88f` unchanged (OBSERVED).

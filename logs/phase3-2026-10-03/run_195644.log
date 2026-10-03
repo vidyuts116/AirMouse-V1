@@ -1,0 +1,4 @@
+AirMouse SITL flight test 2026-10-03T19:56:44: simulation/sitl/empty_sitl.sdf, takeoff 1.5 m, hover 30.0 s; params PROVISIONAL (not flight-approved)
+  EKF3 using GPS
+  [PASS] GUIDED + arm: measured ARMED | expected ARMED (OBSERVED)
+  [PASS] takeoff to 1.5 m (truth z >= target - 0.1 m): measured reached z 2.200 m at t=50.17 | expected z_home 0.040 + 1.5 = 1.540 m (OBSERVED)
