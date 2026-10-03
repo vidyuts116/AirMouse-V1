@@ -272,6 +272,23 @@ def main():
                 break
             ct.append((m.TimeUS / 1e6, m.ThO, m.ThH, m.Alt))
         ct = np.array(ct)
+        df.rewind()
+        rf = []
+        while True:
+            m = df.recv_match(type="RFND", blocking=False)
+            if m is None:
+                break
+            rf.append((m.TimeUS / 1e6, m.Dist, m.Stat))
+        if rf and len(ct):
+            rf = np.array(rf)
+            ct_alt = ct[ct[:, 3] > 0.8 * args.alt]
+            if len(ct_alt):
+                hv = rf[(rf[:, 0] >= ct_alt[0, 0] + args.settle) & (rf[:, 0] <= ct_alt[-1, 0])]
+                pre = rf[rf[:, 0] < ct_alt[0, 0] - 3]
+                log.info("hover", "ArduPilot rangefinder (dataflash RFND; status 3 = OutOfRangeHigh, 4 = Good)",
+                         f"hover Dist mean {hv[:, 1].mean():.3f} m (std {hv[:, 1].std() * 100:.1f} cm, status "
+                         f"{sorted(set(hv[:, 2].astype(int).tolist()))}); before takeoff status "
+                         f"{sorted(set(pre[:, 2].astype(int).tolist())) if len(pre) else 'n/a'}", "OBSERVED")
         air = ct[ct[:, 3] > 0.8 * args.alt] if len(ct) else ct
         if len(air):
             log.info("hover", "dataflash CTUN hover throttle", f"ThH {air[0, 2]:.4f} -> {air[-1, 2]:.4f} over "

@@ -52,6 +52,8 @@ def sitl_block():
         '        <modelXYZToAirplaneXForwardZDown degrees="true">0 0 0 180 0 0</modelXYZToAirplaneXForwardZDown>\n'
         '        <gazeboXYZToNED degrees="true">0 0 0 180 0 90</gazeboXYZToNED>\n'
         "        <imuName>base_link::imu_sensor_frd</imuName>\n"
+        "        <!-- Downward rangefinder forwarded to SITL as JSON rng_1 (ArduPilotPlugin.cc:1965-1995). -->\n"
+        "        <sensor><type>RANGEFINDER</type><index>1</index><topic>/airmouse/rangefinder</topic></sensor>\n"
         + "".join(controls) +
         "      </plugin>\n"
         '      <plugin filename="AirMouseActuatorsBridge" name="airmouse::ActuatorsBridge">'

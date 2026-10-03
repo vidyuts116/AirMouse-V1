@@ -36,7 +36,7 @@ TOOLS = ROOT / "tools"
 BASELINE = ROOT / "simulation" / "airmouse_quadrotor.sdf"
 DIAG_DIR = ROOT / "simulation" / "diagnostics"
 JOINTFIX = DIAG_DIR / "airmouse_force_diagnostic_jointfix.sdf"
-BASELINE_SHA = "21626e644770873ed59aa6dce6b5ce2f47b11b7ab9e45b5fa1e4f764d3fea88f"  # IMU + LiDAR + RGB camera
+BASELINE_SHA = "f1c1d0f7dfdce2407b314244d38c46becb12da1a095e1ec4fbbc7688da6ff46c"  # IMU + LiDAR + RGB + rangefinder
 GZ_VERSION = "8.15.0"
 REQUIRED_TOOLS = ["airmouse_hover_helper.cc", "airmouse_sensor_probe.cc", "airmouse_hover_acceptance.py",
                   "airmouse_differential_thrust.py", "measure_airmouse_diagnostic.py"]
@@ -1005,6 +1005,63 @@ def camera_checks(ctx, cams):
     return ok
 
 
+def beams(sensor):
+    return int(sensor["el"].findtext("lidar/scan/horizontal/samples") or 0)
+
+
+def rangefinder_checks(ctx, sensor):
+    """Downward 1-beam rangefinder: rate, no return below min range at rest, and range = truth height - mount
+    offset in a hover at z ~ 2 m."""
+    log = ctx.log
+    el = sensor["el"]
+    rmin, rmax = float(el.findtext("lidar/range/min")), float(el.findtext("lidar/range/max"))
+    sigma = float(el.findtext("lidar/noise/stddev"))
+    mount = [float(v) for v in el.findtext("pose").split()]
+    log(f"  rangefinder {sensor['name']} topic {sensor['topic']}, {sensor['rate']:g} Hz, {rmin}-{rmax} m, "
+        f"sigma {sigma} m, mount z {mount[2]:+.3f} m, pitch {math.degrees(mount[4]):.1f} deg")
+    s = Session(ctx.gz, ctx.binary, BASELINE, log, "stage10-rangefinder")
+    probe = None
+    try:
+        probe = Probe(ctx.probe_bin, [f"scan:{sensor['topic']}"], log.dir / "stage10-rangefinder_probe.txt")
+        rest = s.wait_rest()
+        s.wait_pose(lambda p: p[0] >= rest[0] + 1.0, 15, "1 s at rest")
+        rest_win = (rest[0], rest[0] + 1.0)
+        t1 = s.launch(HOVER_CMD, 1000)
+        s.unpause()
+        s.wait_pose(lambda p: p[0] >= t1 + 2.0, 20, "2 s hover")
+        time.sleep(0.3)
+        poses = s.poses_between(t1, t1 + 2.0)
+        s.land()
+        with probe.lock:
+            scans = list(probe.scan.get(sensor["topic"], []))
+    finally:
+        if probe:
+            probe.stop()
+        s.close()
+    rate, span = rate_of([h[0] for h, _ in scans])
+    ok = log.check(10, "rangefinder rate (sim time)", abs(rate - sensor["rate"]) <= 0.1 * sensor["rate"],
+                   f"{rate:.1f} Hz over {span:.2f} s (n={len(scans)})", f"{sensor['rate']:g} Hz ±10 %", "OBSERVED")
+    at_rest = [rr[0] for h, rr in scans if rest_win[0] <= h[0] <= rest_win[1]]
+    ok &= log.check(10, "rangefinder at rest (sensor ~5 mm above ground, below min range): no return",
+                    len(at_rest) > 0 and all(not np.isfinite(v) for v in at_rest),
+                    f"{sum(not np.isfinite(v) for v in at_rest)}/{len(at_rest)} non-finite", f"all non-finite (< {rmin} m)",
+                    "OBSERVED")
+    hov = [(h[0], rr[0]) for h, rr in scans if t1 + 0.1 <= h[0] <= t1 + 2.0]
+    if not hov or len(poses) < 10:
+        return log.check(10, "rangefinder hover samples", False, len(hov), "> 0", "OBSERVED")
+    t = np.array([x[0] for x in hov])
+    r = np.array([x[1] for x in hov])
+    truth = np.interp(t, poses[:, 0], poses[:, 3]) + mount[2]     # sensor height above ground (level hover)
+    err = r - truth
+    ok &= log.check(10, "rangefinder in hover: range = truth height - mount offset",
+                    np.isfinite(r).all() and abs(err.mean()) <= sigma,
+                    f"mean {r.mean():.4f} m vs truth {truth.mean():.4f} m: error {err.mean() * 1e3:+.1f} mm (n={len(r)})",
+                    f"|mean error| <= {sigma * 1e3:.0f} mm", "OBSERVED")
+    ok &= log.check(10, "rangefinder noise: error std / configured", 0.5 <= err.std() / sigma <= 2.0,
+                    f"{err.std() * 1e3:.1f} mm / {sigma * 1e3:.0f} mm = {err.std() / sigma:.2f}", "0.5-2.0", "OBSERVED")
+    return ok
+
+
 def stage10(ctx):
     log = ctx.log
     files = [BASELINE] + sorted(DIAG_DIR.glob("*.sdf"))
@@ -1014,7 +1071,7 @@ def stage10(ctx):
                      f"{x['name']} type={x['type']} update_rate={x['rate']:g} topic={x['topic']}", "OBSERVED")
     base = sensors_in(BASELINE)
     kinds = {x["type"] for x in base}
-    families = [("IMU", {"imu"}), ("LiDAR", {"gpu_lidar", "lidar", "gpu_ray", "ray"}),
+    families = [("IMU", {"imu"}), ("LiDAR / rangefinder", {"gpu_lidar", "lidar", "gpu_ray", "ray"}),
                 ("depth camera", {"depth_camera", "depth", "rgbd_camera"}), ("RGB camera", {"camera"})]
     for label, types in families:
         if not kinds & types:
@@ -1022,8 +1079,11 @@ def stage10(ctx):
     imu = [x for x in base if x["type"] == "imu"]
     if imu and not imu_checks(ctx, imu[0]):
         return False
-    lidar = [x for x in base if x["type"] in ("gpu_lidar", "lidar")]
+    lidar = [x for x in base if x["type"] in ("gpu_lidar", "lidar") and beams(x) > 1]
     if lidar and not lidar_checks(ctx, lidar[0]):
+        return False
+    ranger = [x for x in base if x["type"] in ("gpu_lidar", "lidar") and beams(x) == 1]
+    if ranger and not rangefinder_checks(ctx, ranger[0]):
         return False
     cams = [x for x in base if x["type"] in CAMERA_TYPES]
     cams.sort(key=lambda x: 0 if CAMERA_TYPES[x["type"]][0] == "depth" else 1)

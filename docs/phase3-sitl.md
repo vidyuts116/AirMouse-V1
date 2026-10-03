@@ -229,3 +229,43 @@ This matches the prediction of about 0.488 from §9.4: the thrust-domain hover t
 | Horizontal drift | 2.0 cm |
 | RTF | 0.992 over 126 s |
 | CPU / RSS | gz sim 44 % / 148 MB; arducopter 11 % / 5 MB; MAVProxy 8 % / 87 MB |
+
+### 10.2 Step 2a: downward rangefinder (sim-side sensor), forwarded to ArduPilot
+
+**Sensor:** added to the baseline. Physics parameters changed: none. Baseline `21626e64…a88f` → **`f1c1d0f7dfdce2407b314244d38c46becb12da1a095e1ec4fbbc7688da6ff46c`**; diff in `logs/regression-2026-10-03/baseline_rangefinder.diff`; backup `backups/airmouse_quadrotor.sdf.21626e64.pre-rangefinder`.
+
+- **Specification:** `rangefinder_down`, a 1-beam `gpu_lidar`, TF-Luna class: 50 Hz, 0.2–8 m, gaussian σ 0.02 m. Topic `/airmouse/rangefinder` (`gz.msgs.LaserScan`).
+- **Mount:** z = −0.035 m (inside the body bottom face), pitched +90° so the beam points down. At rest the sensor is about 5 mm above the ground, which is below its minimum range.
+- **Regression Stage 10** now distinguishes the 2D LiDAR (> 1 beam) from the rangefinder (1 beam). The full regression **PASSES** (Stages 0–10, 27/27 sensor checks).
+
+| Rangefinder check (OBSERVED) | Result |
+|---|---|
+| Rate | 50.2 Hz |
+| At rest | 50/50 no-return (expected: below 0.2 m min) |
+| Hover at z ≈ 2 m vs truth height − 0.035 m | 1.9643 m vs 1.9681 m: −3.8 mm |
+| Noise | 21.0 mm (1.05 σ) |
+
+**Does ArduPilotPlugin forward rangefinder data over JSON? Yes (SOURCE-CODE VERIFIED).**
+
+- `ArduPilotPlugin` takes `<sensor><type>…</type><index>N</index><topic>…</topic></sensor>` entries, subscribes to them as `gz.msgs.LaserScan` (`ArduPilotPlugin.cc:895-1000`), and latches the **minimum** range of each scan. No return (inf) becomes `2 × range_max`.
+- It sends `rng_1…rng_6` in the JSON packet (`:1965-1995`). SITL parses them into `rangefinder_m[]` (`SIM_JSON.cpp:389`), and the SITL rangefinder driver (`RNGFND1_TYPE 100`, `AP_RangeFinder_SITL.cpp`) reads them.
+- `make_sitl_world.py` now adds `<sensor><type>RANGEFINDER</type><index>1</index><topic>/airmouse/rangefinder</topic></sensor>`.
+- The ArduPilot side is in `simulation/sitl/airmouse_provisional_rangefinder.parm` (PROVISIONAL): `RNGFND1_TYPE 100`, `ORIENT 25` (down), `MIN_CM 20`, `MAX_CM 800`, `GNDCLEAR 1`.
+
+| End-to-end check (OBSERVED) | Result |
+|---|---|
+| Held diagnostic world (0.5 m, 10° nose-up) | ArduPilot `DISTANCE_SENSOR` 46–50 cm; Gazebo topic 0.492 m; expected ≈ 0.48 m |
+| GPS-on GUIDED hover at 1.5 m (run `flight_empty_sitl_010554`) | ArduPilot RFND **1.487 m**, std 3.2 cm, status **Good (4)**, n=435; truth sensor height ≈ 1.496 m (−9 mm) |
+| On the ground | RFND 16.0 m, status OutOfRangeHigh (3) |
+
+**Limitation (OBSERVED, source-explained):** below its 0.2 m minimum the Gazebo sensor returns no hit, and the plugin maps that to 2 × range_max = 16 m. ArduPilot therefore reports **OutOfRangeHigh on the ground**, where a real rangefinder would usually report OutOfRangeLow or a short reading.
+
+- **Impact:** none while the barometer is the height source (`EK3_SRC1_POSZ 1`, default).
+- **Rangefinder as height source:** if Rohit selects it (`EK3_RNG_USE_HGT` or `EK3_SRC1_POSZ 2`), the options are:
+  - (a) mount the sensor so its ground clearance exceeds 0.2 m (it would need landing legs)
+  - (b) set the Gazebo `range/min` to 0.01 m, so the ground is seen at rest, and keep the 0.2 m minimum in ArduPilot (`RNGFND1_MIN_CM`)
+  - (c) a small plugin change to report `range_min` instead of `2 × range_max` for below-minimum readings
+
+  None of these is applied.
+
+**Worlds regenerated:** all Phase 2 worlds and the SITL worlds were regenerated from the new baseline. `verify_world_lidar.py all` **PASSES** on all 12 worlds (360/360 beams; bias within ±0.4 mm).

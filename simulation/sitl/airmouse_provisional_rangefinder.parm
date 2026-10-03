@@ -1,0 +1,11 @@
+# =====================================================================================
+# PROVISIONAL – for Rohit's review, not flight-approved. SIMULATION ONLY.
+# Downward rangefinder (Gazebo gpu_lidar 1 beam, /airmouse/rangefinder) forwarded by
+# ArduPilotPlugin as JSON rng_1 and read by the SITL rangefinder driver (type 100).
+# =====================================================================================
+RNGFND1_TYPE     100
+RNGFND1_ORIENT   25
+RNGFND1_MIN_CM   20
+RNGFND1_MAX_CM   800
+# Sensor is 0.035 m below the body origin, i.e. ~0.5 cm above the ground at rest.
+RNGFND1_GNDCLEAR 1

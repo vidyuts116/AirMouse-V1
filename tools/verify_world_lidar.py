@@ -49,7 +49,7 @@ warnings.filterwarnings("ignore", category=RuntimeWarning)  # nanmean/subtract o
 
 
 def lidar_config():
-    lidar = [s for s in reg.sensors_in(reg.BASELINE) if s["type"] in ("gpu_lidar", "lidar")][0]
+    lidar = [s for s in reg.sensors_in(reg.BASELINE) if s["type"] in ("gpu_lidar", "lidar") and reg.beams(s) > 1][0]
     el = lidar["el"]
     return {"topic": lidar["topic"], "rate": lidar["rate"], "sigma": float(el.findtext("lidar/noise/stddev")),
             "rmin": float(el.findtext("lidar/range/min")), "rmax": float(el.findtext("lidar/range/max")),

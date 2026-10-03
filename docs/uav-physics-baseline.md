@@ -168,7 +168,8 @@ The regression pins `GZ_IP=127.0.0.1`, because Gazebo Transport discovery was lo
 | 2. 2D LiDAR | `1224906b074b16317329e07107e510c751b4693969e1e00ddc48187d8a36b91c` | `logs/regression-2026-10-03/baseline_lidar.diff` | **PASS**, Stages 0–10 |
 | 3a. Depth camera | `de85fc006cfa95239bb724c288560ece89fb04c96d96c76c741f80d9d1ed6a0f` | `logs/regression-2026-10-03/baseline_depth.diff` | Stages 0–9 PASS; **Stage 10 FAIL**, see KNOWN ISSUE |
 | 3b. Revert depth camera (approved) | `1224906b…b91c`, restored byte-for-byte from backup | — | — |
-| 3c. RGB camera | **`21626e644770873ed59aa6dce6b5ce2f47b11b7ab9e45b5fa1e4f764d3fea88f`** (current) | `logs/regression-2026-10-03/baseline_rgb.diff` | **PASS**, Stages 0–10, plus Stage 9 ×2 more |
+| 3c. RGB camera | `21626e644770873ed59aa6dce6b5ce2f47b11b7ab9e45b5fa1e4f764d3fea88f` | `logs/regression-2026-10-03/baseline_rgb.diff` | **PASS**, Stages 0–10, plus Stage 9 ×2 more |
+| 4. Downward rangefinder (2026-10-04) | **`f1c1d0f7dfdce2407b314244d38c46becb12da1a095e1ec4fbbc7688da6ff46c`** (current) | `logs/regression-2026-10-03/baseline_rangefinder.diff` | **PASS**, Stages 0–10 (see `phase3-sitl.md` §10.2) |
 
 Byte-exact backups of each pre-step file are in `backups/airmouse_quadrotor.sdf.<hash8>.pre-*`.
 

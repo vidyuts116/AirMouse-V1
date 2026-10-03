@@ -35,4 +35,9 @@ Chronological engineering log. Each entry carries evidence labels: OBSERVED, SOU
 ## 2026-10-04
 
 - **Hover learning in LOITER (GPS on):** `MOT_THST_HOVER` learned **0.488**, as predicted, which is the thrust-domain value after compensation. It is recorded for Rohit and not applied. The LOITER hover was stable: altitude error max 1.3 cm, drift 2.0 cm. See `phase3-sitl.md` §10.1.
+- **Downward rangefinder:**
+  - Added to the baseline as a 1-beam `gpu_lidar` (0.2–8 m, σ 2 cm, 50 Hz). New baseline `f1c1d0f7`; regression PASS.
+  - `ArduPilotPlugin` forwards it as JSON `rng_1` (SOURCE-CODE VERIFIED), and ArduPilot RFND reads 1.487 m in a 1.5 m hover, status Good.
+  - Limitation: on the ground it reports OutOfRangeHigh, because the plugin maps no return to 2 × max. Options are listed for Rohit.
+  - All 12 worlds regenerated and re-verified: PASS. See `phase3-sitl.md` §10.2.
 

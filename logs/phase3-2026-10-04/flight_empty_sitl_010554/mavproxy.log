@@ -1,0 +1,55 @@
+Connect tcp:127.0.0.1:5760 source_system=255
+Log Directory: /Users/arif_svii/Drone/logs/phase3-2026-10-04/flight_empty_sitl_010554/
+Telemetry log: /Users/arif_svii/Drone/logs/phase3-2026-10-04/flight_empty_sitl_010554/mav.tlog
+Waiting for heartbeat from tcp:127.0.0.1:5760
+MAV> Detected vehicle 1:1 on link 0
+online system 1
+STABILIZE> Mode STABILIZE
+AP: Calibrating barometer
+AP: Initialising ArduPilot
+AP: ArduCopter V4.6.3 (92b0cd78)
+AP: D3FAULT-2.local
+AP: Frame: QUAD/X_REV
+Received 1412 parameters (ftp)
+Saved 1412 parameters to /Users/arif_svii/Drone/logs/phase3-2026-10-04/flight_empty_sitl_010554/mav.parm
+Saved 1412 defaults to /Users/arif_svii/Drone/logs/phase3-2026-10-04/flight_empty_sitl_010554/defaults.parm
+AP: Barometer 1 calibration complete
+AP: Barometer 2 calibration complete
+AP: ArduPilot Ready
+fence present
+AP: Field Elevation Set: 584m
+Flight battery warning
+AP: RC7: SaveWaypoint LOW
+AP: EKF3 IMU0 initialised
+AP: EKF3 IMU1 initialised
+AP: EKF3 IMU1 tilt alignment complete
+AP: EKF3 IMU0 tilt alignment complete
+AP: EKF3 IMU1 MAG0 initial yaw alignment complete
+AP: EKF3 IMU0 MAG0 initial yaw alignment complete
+AP: GPS 1: probing for u-blox at 230400 baud
+AP: GPS 1: detected u-blox
+AP: EKF3 IMU0 origin set
+AP: EKF3 IMU1 origin set
+AP: EKF3 IMU0 is using GPS
+mode guided
+STABILIZE> Got COMMAND_ACK: DO_SET_MODE: ACCEPTED
+GUIDED> Mode GUIDED
+AP: EKF3 IMU1 is using GPS
+arm throttle
+GUIDED> Got COMMAND_ACK: COMPONENT_ARM_DISARM: ACCEPTED
+AP: Arming motors
+ARMED
+takeoff 1.5
+GUIDED> Taking off to 1.5 meters
+Got COMMAND_ACK: NAV_TAKEOFF: ACCEPTED
+Flight battery 100 percent
+mode land
+GUIDED> Got COMMAND_ACK: DO_SET_MODE: ACCEPTED
+LAND> Mode LAND
+AP: Disarming motors
+DISARMED
+param fetch MOT_THST_HOVER
+LAND> Requested parameter MOT_THST_HOVER
+MOT_THST_HOVER = 0.5400000
+param show MOT_THST_HOVER
+LAND> MOT_THST_HOVER   0.5400000214576721

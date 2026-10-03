@@ -1,6 +1,6 @@
 {
  "world": "nidar_maze_s5",
- "baseline_sha256": "21626e644770873ed59aa6dce6b5ce2f47b11b7ab9e45b5fa1e4f764d3fea88f",
+ "baseline_sha256": "f1c1d0f7dfdce2407b314244d38c46becb12da1a095e1ec4fbbc7688da6ff46c",
  "wall_height": 2.44,
  "wall_thickness": 0.1,
  "spawn": {
