@@ -166,7 +166,9 @@ The regression pins `GZ_IP=127.0.0.1`, because Gazebo Transport discovery was lo
 | start | `92baa42b6fb1d1a45f4e702c292dbf46c2a473909f4b909659690007eedabc02` | — | — |
 | 1. IMU | `652ef0c11c87fc47fa5acd9bab0546382fe61052b0cfd08a180568b3c489783c` | `logs/regression-2026-10-03/baseline_imu.diff` | **PASS**, Stages 0–10 |
 | 2. 2D LiDAR | `1224906b074b16317329e07107e510c751b4693969e1e00ddc48187d8a36b91c` | `logs/regression-2026-10-03/baseline_lidar.diff` | **PASS**, Stages 0–10 |
-| 3a. Depth camera | `de85fc006cfa95239bb724c288560ece89fb04c96d96c76c741f80d9d1ed6a0f` (current file) | `logs/regression-2026-10-03/baseline_depth.diff` | Stages 0–9 PASS; **Stage 10 FAIL** |
+| 3a. Depth camera | `de85fc006cfa95239bb724c288560ece89fb04c96d96c76c741f80d9d1ed6a0f` | `logs/regression-2026-10-03/baseline_depth.diff` | Stages 0–9 PASS; **Stage 10 FAIL**, see KNOWN ISSUE |
+| 3b. Revert depth camera (approved) | `1224906b…b91c`, restored byte-for-byte from backup | — | — |
+| 3c. RGB camera | **`21626e644770873ed59aa6dce6b5ce2f47b11b7ab9e45b5fa1e4f764d3fea88f`** (current) | `logs/regression-2026-10-03/baseline_rgb.diff` | **PASS**, Stages 0–10, plus Stage 9 ×2 more |
 
 Byte-exact backups of each pre-step file are in `backups/airmouse_quadrotor.sdf.<hash8>.pre-*`.
 
@@ -191,7 +193,16 @@ Byte-exact backups of each pre-step file are in `backups/airmouse_quadrotor.sdf.
   - error std 10.6 mm, against 10 mm configured
   - no returns elsewhere, so no self-hits
 
-### Depth camera: FAIL (platform rendering defect)
+### RGB camera
+
+- **Configuration:** `rgb_camera`, type `camera`, at x = 0.12 m facing +x. 10 Hz, 640×480 R8G8B8, 60° HFOV, clip 0.05–50 m, gaussian pixel noise 0.007 (normalised). Topic `/airmouse/camera`.
+- **Results (OBSERVED, wall world):** 10.16 Hz; every frame 640×480 at 921,600 bytes; image mean 68.9, std 71.2 on a 0–255 scale, so the image is neither blank nor saturated.
+- **Stage 9 repeated twice more with the 0.5 s command-delivery wait:** all PASS.
+  - a_z spread ≤ 0.035 %.
+  - Hover max |z−2| spreads were 0.77 %, 0.39 % and 0.31 % across the three runs. All nine values fall within 0.0070179–0.0070940 m (±38 µm).
+  - The hover a_z is identical to 1e-7 in every run, so this variation comes from the vehicle's state before launch (ground settling under the varying wall-clock timing of the rendering-enabled server), not from physics (INFERRED).
+
+### KNOWN ISSUE: depth camera crashes gz sim on macOS (Ogre2/Metal)
 
 - **Configuration:** `depth_camera` at x = 0.12 m facing +x, 10 Hz, 320×240 R_FLOAT32, 60° HFOV, 0.1–10 m, σ = 0.005 m. Topic `/airmouse/depth`.
 - **Failure (OBSERVED):** the server runs normally until something subscribes to `/airmouse/depth`. Physics Stages 0–9 pass because nothing subscribes during them. On the first subscription, `gz sim` aborts with:
@@ -201,4 +212,6 @@ Byte-exact backups of each pre-step file are in `backups/airmouse_quadrotor.sdf.
   This reproduces in both the baseline and the wall world. Log: `logs/regression-2026-10-03/depth_camera_metal_crash.log`.
 - **OpenGL backend:** `--render-engine-server-api-backend opengl` is worse. The server aborts inside Ogre GL3Plus buffer creation before any sensor publishes. Log: `depth_camera_opengl_crash.log`.
 - **RGB camera trial, scratch copy only:** a type `camera` sensor at 640×480 and 10 Hz **renders on Metal**: 78 frames, 921,600 bytes each (OBSERVED). Log: `rgb_camera_metal_trial_probe.txt`.
-- **Current state:** the baseline still contains the depth camera, pending a decision. Any subscriber to `/airmouse/depth` will crash the simulation.
+- **Status:** the depth camera has been **removed** from the baseline (approved revert to `1224906b`, then the RGB camera was added). Do **not** add `depth_camera` or `rgbd_camera` sensors on this platform (Gazebo Sim 8.15.0, Ogre-Next 2.3.1 on Metal). Any subscriber, for example a ROS bridge, would crash the server.
+- **Fallback when depth data is needed:** a **multi-row `gpu_lidar`**, for example 160 × 120 beams over 60° × 45° at 10 Hz. `gpu_lidar` renders correctly on Metal (OBSERVED, §2D LiDAR). The output is a spherical range image and point cloud (`/…/points`), not a pinhole depth image. Convert it to depth if needed with z = r·cos(elevation)·cos(azimuth).
+- **Re-test trigger:** re-try `depth_camera` after any approved Gazebo, gz-rendering or Ogre-Next upgrade, using Stage 10 of `tools/airmouse_regression.py`.
