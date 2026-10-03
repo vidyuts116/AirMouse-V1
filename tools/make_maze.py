@@ -89,10 +89,31 @@ def perfect_maze(n, seed):
     return open_
 
 
+def check_perfect(n, open_):
+    """A perfect maze is a spanning tree: n*n - 1 passages, every cell reachable. Returns the
+    entrance-to-exit path length in cells (cell (0,0) to cell (n-1,n-1))."""
+    assert len(open_) == n * n - 1, f"{len(open_)} passages, expected {n * n - 1}"
+    adj = {}
+    for pair in open_:
+        a, b = tuple(pair)
+        adj.setdefault(a, []).append(b)
+        adj.setdefault(b, []).append(a)
+    dist, frontier = {(0, 0): 0}, [(0, 0)]
+    while frontier:
+        c = frontier.pop()
+        for m in adj.get(c, []):
+            if m not in dist:
+                dist[m] = dist[c] + 1
+                frontier.append(m)
+    assert len(dist) == n * n, f"only {len(dist)} of {n * n} cells reachable"
+    return dist[(n - 1, n - 1)] + 1
+
+
 def maze_walls(n, cell, seed):
     """Walls on the cell grid (centred at the origin), collinear segments merged.
     Entrance: south side of cell (0, 0); exit: north side of cell (n-1, n-1)."""
     open_ = perfect_maze(n, seed)
+    maze_walls.path_cells = check_perfect(n, open_)
     o = -n * cell / 2
     walls = []
     # Horizontal walls (running along x) on grid line j = 0..n.
@@ -130,7 +151,7 @@ def maze_walls(n, cell, seed):
 
 def world_maze(n, cell, seed):
     walls, start = maze_walls(n, cell, seed)
-    return walls, start, {"cells": n, "cell_size": cell, "seed": seed,
+    return walls, start, {"cells": n, "cell_size": cell, "seed": seed, "solution_path_cells": maze_walls.path_cells,
                           "entrance": "south side of cell (0,0)", "exit": f"north side of cell ({n - 1},{n - 1})"}
 
 
@@ -188,7 +209,8 @@ def main():
                 "spawn": {"x": spawn[0], "y": spawn[1], "z": SPAWN_Z, "yaw": spawn[2]},
                 "walls_cx_cy_lx_ly": walls, "params": meta}
         (out / f"{name}.json").write_text(json.dumps(info, indent=1) + "\n")
-        print(f"{sdf.relative_to(ROOT)}: {len(walls)} wall boxes, spawn ({spawn[0]:g}, {spawn[1]:g})")
+        extra = f"; perfect maze, entrance->exit path {meta['solution_path_cells']} cells" if "cells" in meta else ""
+        print(f"{sdf.relative_to(ROOT)}: {len(walls)} wall boxes, spawn ({spawn[0]:g}, {spawn[1]:g}){extra}")
 
 
 if __name__ == "__main__":
