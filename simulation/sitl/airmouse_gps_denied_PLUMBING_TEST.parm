@@ -1,0 +1,20 @@
+# =====================================================================================
+# GROUND-TRUTH-DERIVED, PLUMBING TEST ONLY.
+# PROVISIONAL – for Rohit's review, not flight-approved. SIMULATION ONLY.
+# ExternalNav input comes from tools/externalnav_stub_GROUND_TRUTH_PLUMBING_ONLY.py, which is
+# Gazebo ground truth plus synthetic noise and drift. It MUST be replaced by Doshi's SLAM odometry
+# (docs/interfaces/odometry_to_ardupilot.md) and must never be used as the navigation solution.
+# =====================================================================================
+# Visual odometry over MAVLink (ODOMETRY / VISION_POSITION_ESTIMATE)
+VISO_TYPE       1
+# EKF3 source set 1: horizontal position, velocity and yaw from ExternalNav (6);
+# height from the barometer (1); no vertical-velocity source (GPS is disabled).
+EK3_SRC1_POSXY  6
+EK3_SRC1_VELXY  6
+EK3_SRC1_YAW    6
+EK3_SRC1_POSZ   1
+EK3_SRC1_VELZ   0
+# No GPS: no driver, and the SITL GPS simulation is disabled.
+GPS1_TYPE       0
+SIM_GPS_DISABLE 1
+# VISO_* noise, compass and FS_EKF_* are left at ArduPilot defaults for this plumbing test.

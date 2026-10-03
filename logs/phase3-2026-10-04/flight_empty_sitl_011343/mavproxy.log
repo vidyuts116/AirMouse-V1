@@ -1,0 +1,34 @@
+Connect tcp:127.0.0.1:5760 source_system=255
+Log Directory: /Users/arif_svii/Drone/logs/phase3-2026-10-04/flight_empty_sitl_011343/
+Telemetry log: /Users/arif_svii/Drone/logs/phase3-2026-10-04/flight_empty_sitl_011343/mav.tlog
+Waiting for heartbeat from tcp:127.0.0.1:5760
+MAV> Detected vehicle 1:1 on link 0
+online system 1
+STABILIZE> Mode STABILIZE
+AP: Calibrating barometer
+AP: Initialising ArduPilot
+AP: ArduCopter V4.6.3 (92b0cd78)
+AP: D3FAULT-2.local
+AP: Frame: QUAD/X_REV
+Received 1397 parameters (ftp)
+Saved 1397 parameters to /Users/arif_svii/Drone/logs/phase3-2026-10-04/flight_empty_sitl_011343/mav.parm
+Saved 1397 defaults to /Users/arif_svii/Drone/logs/phase3-2026-10-04/flight_empty_sitl_011343/defaults.parm
+AP: Barometer 1 calibration complete
+AP: Barometer 2 calibration complete
+AP: ArduPilot Ready
+fence present
+AP: Field Elevation Set: 584m
+Flight battery warning
+AP: RC7: SaveWaypoint LOW
+AP: EKF3 IMU0 initialised
+AP: EKF3 IMU1 initialised
+AP: EKF3 IMU0 tilt alignment complete
+AP: EKF3 IMU1 tilt alignment complete
+AP: EKF3 IMU0 yaw aligned
+AP: EKF3 IMU1 yaw aligned
+AP: EKF3 IMU0 is using external nav data
+AP: EKF3 IMU0 initial pos NED = -0.0,-0.0,-0.0 (m)
+AP: EKF3 IMU0 initial vel NED = -0.1,-0.0,0.0 (m/s)
+AP: EKF3 IMU1 is using external nav data
+AP: EKF3 IMU1 initial pos NED = -0.0,-0.0,-0.0 (m)
+AP: EKF3 IMU1 initial vel NED = -0.1,-0.0,0.0 (m/s)

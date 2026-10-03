@@ -269,3 +269,53 @@ This matches the prediction of about 0.488 from §9.4: the thrust-domain hover t
   None of these is applied.
 
 **Worlds regenerated:** all Phase 2 worlds and the SITL worlds were regenerated from the new baseline. `verify_world_lidar.py all` **PASSES** on all 12 worlds (360/360 beams; bias within ±0.4 mm).
+
+### 10.3 Step 2b: ExternalNav plumbing stub — GROUND-TRUTH-DERIVED, PLUMBING TEST ONLY
+
+> **GROUND-TRUTH-DERIVED, PLUMBING TEST ONLY.** `tools/externalnav_stub_GROUND_TRUTH_PLUMBING_ONLY.py` fabricates odometry from the Gazebo ground-truth pose plus synthetic noise and drift. It exists only to exercise ArduPilot's ExternalNav path in SITL. It **must be removed once Doshi's SLAM odometry exists**, and it must **never** be used as the navigation solution or in any performance claim. The same label appears in the stub's file name, its docstring, every line of its log output, its CSV header and the parameter file.
+
+**Message:** MAVLink `ODOMETRY` at 30 Hz from component 197 (VIO) to SITL TCP 5762.
+
+- `frame_id` is `MAV_FRAME_LOCAL_FRD` and `child_frame_id` is `MAV_FRAME_BODY_FRD`. These are the only frames ArduPilot 4.6.3 accepts (SOURCE-CODE VERIFIED, `GCS_Common.cpp:3876-3910`).
+- The local frame is the vehicle's body FRD frame at the first pose, as a SLAM system would define it.
+- Fields: a diagonal pose and velocity covariance (variances), and `quality` 100.
+
+The stub also sends `SET_GPS_GLOBAL_ORIGIN` (SITL home) every 2 s for 30 s, and `SIGUSR1` toggles a dropout.
+
+**Synthetic error model** (PROVISIONAL assumptions, not a model of any real SLAM; seed 1):
+
+| Error term | Value |
+|---|---|
+| White position noise | σ 2 cm |
+| White roll / pitch noise | σ 0.3° |
+| White yaw noise | σ 0.5° |
+| White velocity noise | σ 5 cm/s |
+| Random-walk drift, x/y | 5 mm/√s |
+| Random-walk drift, z | 3 mm/√s |
+| Random-walk drift, yaw | 0.02°/√s |
+
+**Parameters:** `simulation/sitl/airmouse_gps_denied_PLUMBING_TEST.parm`, labelled the same way and PROVISIONAL.
+
+| Parameter | Value | Meaning |
+|---|---|---|
+| `VISO_TYPE` | 1 | MAVLink |
+| `EK3_SRC1_POSXY` | 6 | ExternalNav |
+| `EK3_SRC1_VELXY` | 6 | ExternalNav |
+| `EK3_SRC1_YAW` | 6 | ExternalNav |
+| `EK3_SRC1_POSZ` | 1 | barometer |
+| `EK3_SRC1_VELZ` | 0 | none; its default is GPS, and GPS is disabled |
+| `GPS1_TYPE` | 0 | no GPS |
+| `SIM_GPS_DISABLE` | 1 | no simulated GPS |
+
+`VISO_*` noise, compass and `FS_EKF_*` stay at defaults: `FS_EKF_ACTION` = Land, `FS_EKF_THRESH` 0.8.
+
+**Ground plumbing check** (no arming), run `logs/phase3-2026-10-04/flight_empty_sitl_011343/`, OBSERVED:
+
+- **ArduPilot accepted the stub:** both EKF3 cores reported `initialised`, `initial pos NED = -0.0,-0.0,-0.0 (m)`, `yaw aligned` and **`is using external nav data`**, with no GPS messages.
+- **Rate:** the stub sent 669 ODOMETRY messages in about 22 s (30 Hz).
+- **No dataflash log on the ground:** none is written while disarmed (default), so the per-sample VISP and EKF comparison comes from the flight in §10.4.
+
+**Two ArduPilot behaviours that the interface must respect** (SOURCE-CODE VERIFIED, `AP_VisualOdom_MAV.cpp`):
+
+- The error ArduPilot derives from the covariance is clamped to at least `VISO_POS_M_NSE` (default 0.2 m) and `VISO_YAW_M_NSE` (default 0.2 rad). Small reported covariances therefore do not tighten the EKF below those floors.
+- Samples with `quality < VISO_QUAL_MIN` are ignored.

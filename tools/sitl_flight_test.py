@@ -13,6 +13,7 @@ import importlib.util
 import math
 import os
 import re
+import signal
 import subprocess
 import sys
 import threading
@@ -85,8 +86,17 @@ def main():
                         help="hover mode after the GUIDED takeoff; loiter centres RC 1-4 at 1500 (enables hover learning)")
     parser.add_argument("--parm", action="append", default=[],
                         help="extra parameter file(s) loaded after the standard set (e.g. GPS-denied config)")
-    parser.add_argument("--sidecar", default=None,
-                        help="command started after SITL boots (e.g. the ExternalNav stub); killed at the end")
+    parser.add_argument("--ready-msg", default=r"EKF3 IMU0 is using GPS",
+                        help="regex of the ArduPilot message that means the EKF is ready to arm")
+    parser.add_argument("--stub", action="store_true",
+                        help="start tools/externalnav_stub_GROUND_TRUTH_PLUMBING_ONLY.py (GROUND-TRUTH-DERIVED, "
+                             "PLUMBING TEST ONLY) after MAVProxy connects")
+    parser.add_argument("--nav-loss-at", type=float, default=None,
+                        help="seconds after the analysed hover window starts: stop the ExternalNav stub (SIGUSR1)")
+    parser.add_argument("--ground-only", action="store_true",
+                        help="no arming: after the EKF is ready, record --hover seconds on the ground (plumbing check)")
+    parser.add_argument("--nav-loss-dur", type=float, default=0.0,
+                        help="seconds of ExternalNav loss (0 = until the end of the test)")
     parser.add_argument("--logdir", default=str(ROOT / "logs" / f"phase3-{date.today().isoformat()}"))
     args = parser.parse_args()
     world = Path(args.world).resolve()
@@ -101,7 +111,8 @@ def main():
         raise SystemExit("a gz sim process is already running; stop it first")
     log(f"AirMouse SITL flight test {datetime.now().isoformat(timespec='seconds')}: {world.relative_to(ROOT)}, "
         f"takeoff {args.alt} m, hover {args.hover} s; params PROVISIONAL (not flight-approved)")
-    server = streams = sitl = mav = sampler = None
+    server = streams = sitl = mav = sampler = stub = None
+    loss = {}
     ok, unstable, marks, learned = True, None, {}, None
 
     def drain(seconds):
@@ -122,14 +133,23 @@ def main():
                             encoding="utf-8", timeout=60, cwd=str(run))
         mav.logfile_read = open(run / "mavproxy.log", "w")
         mav.expect(["Detected vehicle", "online system"], timeout=90)
+        if args.stub:
+            stub = subprocess.Popen([sys.executable, str(ROOT / "tools/externalnav_stub_GROUND_TRUTH_PLUMBING_ONLY.py"),
+                                     "--log", str(run / "externalnav_stub_GROUND_TRUTH_PLUMBING_ONLY.csv")],
+                                    stdout=open(run / "externalnav_stub.log", "w"), stderr=subprocess.STDOUT)
+            log("  *** ExternalNav stub started: GROUND-TRUTH-DERIVED, PLUMBING TEST ONLY ***")
         sampler = Sampler(streams, {"gz_sim": "gz sim", "arducopter": "build/sitl/bin/arducopter",
                                     "mavproxy": "mavproxy.py"})
         sampler.start()
         # Wait until the EKF uses GPS, then GUIDED + arm (retry while pre-arm checks are not yet satisfied).
-        mav.expect(r"EKF3 IMU0 is using GPS", timeout=180)
-        log("  EKF3 using GPS")
+        mav.expect(args.ready_msg, timeout=180)
+        log(f"  EKF ready: '{mav.match.group(0)}'")
         rest = streams.latest()
         z_home = rest[3]
+        if args.ground_only:
+            drain(args.hover)
+            marks["ground_only"] = (rest[0], streams.latest()[0])
+            raise reg.StageFail("ground-only plumbing check complete (no flight, by request)")
         armed = False
         for attempt in range(12):
             mav.sendline("mode guided")
@@ -183,8 +203,24 @@ def main():
                 unstable = "hover window did not complete within the wall-clock limit"
                 break
             p = streams.latest()
+            if stub is not None and args.nav_loss_at is not None:
+                t_loss = reached[0] + args.settle + args.nav_loss_at
+                if "start" not in loss and p[0] >= t_loss:
+                    os.kill(stub.pid, signal.SIGUSR1)
+                    loss.update(start=p[0], start_wall=time.time(), pose=p)
+                    log(f"  ExternalNav LOSS started at sim t={p[0]:.2f}")
+                if ("start" in loss and "end" not in loss and args.nav_loss_dur > 0
+                        and p[0] >= loss["start"] + args.nav_loss_dur):
+                    os.kill(stub.pid, signal.SIGUSR1)
+                    loss.update(end=p[0], end_wall=time.time())
+                    log(f"  ExternalNav LOSS ended at sim t={p[0]:.2f}")
             r, pi, _ = euler(p[4:8])
-            if p[0] >= reached[0] + 1.0 and (max(abs(r), abs(pi)) > 30 or abs(p[3] - target) > 1.0):
+            if "start" in loss and p[3] < z_home + 0.05 and p[0] > loss["start"] + 2:
+                loss["landed"] = p[0]
+                log(f"  vehicle on the ground at sim t={p[0]:.2f} (during/after ExternalNav loss)")
+                break
+            alt_bad = abs(p[3] - target) > 1.0 and "start" not in loss   # failsafe descent is behaviour, not instability
+            if p[0] >= reached[0] + 1.0 and (max(abs(r), abs(pi)) > 30 or alt_bad):
                 unstable = f"t={p[0]:.2f}: roll {r:+.1f} deg, pitch {pi:+.1f} deg, z {p[3]:.3f} m (target {target:.3f})"
                 break
             if p[0] >= t_end:
@@ -192,7 +228,7 @@ def main():
         marks["hover_end"] = streams.latest()[0]
         ok &= log.check("flight", "stable hover (|tilt| <= 30 deg, |z err| <= 1 m)", unstable is None,
                         unstable or "stable", "stable", "OBSERVED")
-        if not args.no_land:
+        if not args.no_land and "landed" not in loss:
             mav.sendline("mode land")
             i = mav.expect([r"DISARMED", pexpect.TIMEOUT], timeout=60)
             marks["disarmed"] = streams.latest()[0]
@@ -205,11 +241,20 @@ def main():
         mav.expect(r"MOT_THST_HOVER\s+(-?[\d.]+)", timeout=20)
         learned = float(mav.match.group(1))
     except (reg.StageFail, pexpect.ExceptionPexpect, OSError, RuntimeError) as error:
-        log(f"  [FAIL] aborted: {error}")
-        ok = False
+        if "ground_only" in marks:
+            log(f"  {error}")
+        else:
+            log(f"  [FAIL] aborted: {error}")
+            ok = False
     finally:
         if sampler:
             sampler.stop_flag = True
+        if stub is not None and stub.poll() is None:
+            stub.terminate()
+            try:
+                stub.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                stub.kill()
         if mav is not None:
             if unstable:
                 mav.sendline("disarm force")
@@ -294,6 +339,67 @@ def main():
             log.info("hover", "dataflash CTUN hover throttle", f"ThH {air[0, 2]:.4f} -> {air[-1, 2]:.4f} over "
                      f"{air[-1, 0] - air[0, 0]:.0f} s airborne; ThO mean (last 20 s airborne) "
                      f"{air[air[:, 0] >= air[-1, 0] - 20][:, 1].mean():.4f}", "OBSERVED")
+    if "ground_only" in marks:
+        bins = sorted((run / "logs").glob("*.BIN"))
+        if bins:
+            from pymavlink import mavutil
+            df = mavutil.mavlink_connection(str(bins[-1]))
+            visp, xkf, msgs = [], [], []
+            while True:
+                m = df.recv_match(type=["VISP", "XKF1", "MSG"], blocking=False)
+                if m is None:
+                    break
+                if m.get_type() == "VISP":
+                    visp.append((m.TimeUS / 1e6, m.PX, m.PY, m.PZ, m.Yaw, m.Ignored, m.Qual))
+                elif m.get_type() == "XKF1" and m.C == 0:
+                    xkf.append((m.TimeUS / 1e6, m.PN, m.PE, m.PD, m.Yaw))
+                else:
+                    msgs.append(m.Message)
+            visp, xkf = np.array(visp), np.array(xkf)
+            ok &= log.check("plumbing", "VISP (ExternalNav pose) records received and consumed",
+                            len(visp) > 0 and visp[:, 5].sum() == 0,
+                            f"{len(visp)} records over {visp[-1, 0] - visp[0, 0]:.1f} s, ignored {int(visp[:, 5].sum())}, "
+                            f"quality {sorted(set(visp[:, 6].astype(int).tolist()))}" if len(visp) else "none",
+                            "> 0, none ignored", "OBSERVED")
+            log.info("plumbing", "EKF-related messages", " | ".join(x for x in msgs if "EKF" in x or "ext" in x.lower())[:400],
+                     "OBSERVED")
+            if len(xkf) and len(visp):
+                tail = xkf[xkf[:, 0] >= xkf[-1, 0] - 5]
+                vt = visp[visp[:, 0] >= visp[-1, 0] - 5]
+                log.info("plumbing", "EKF position vs ExternalNav input (last 5 s, vehicle at rest)",
+                         f"EKF PN/PE/PD {tail[:, 1].mean():+.3f}/{tail[:, 2].mean():+.3f}/{tail[:, 3].mean():+.3f} m, yaw "
+                         f"{tail[:, 4].mean():.2f} deg; VISP PX/PY/PZ {vt[:, 1].mean():+.3f}/{vt[:, 2].mean():+.3f}/"
+                         f"{vt[:, 3].mean():+.3f} m, yaw {vt[:, 4].mean():.2f} deg", "OBSERVED")
+    if loss and (run / "mav.tlog").exists():
+        from pymavlink import mavutil
+        tl = mavutil.mavlink_connection(str(run / "mav.tlog"))
+        events, last_mode = [], None
+        while True:
+            m = tl.recv_match(type=["STATUSTEXT", "HEARTBEAT"], blocking=False)
+            if m is None:
+                break
+            dt_rel = m._timestamp - loss["start_wall"]
+            if dt_rel < -2:
+                continue
+            if m.get_type() == "STATUSTEXT":
+                events.append(f"{dt_rel:+.1f}s {m.text}")
+            elif m.get_srcComponent() == 1 and m.type == mavutil.mavlink.MAV_TYPE_QUADROTOR:
+                mode = mavutil.mode_string_v10(m)
+                if mode != last_mode:
+                    events.append(f"{dt_rel:+.1f}s MODE {mode}")
+                    last_mode = mode
+        log.info("navloss", "ArduPilot messages / mode changes relative to ExternalNav loss start",
+                 " | ".join(events[:25]) or "none", "OBSERVED")
+        with streams.lock:
+            pl = np.array(streams.poses)
+        seg = pl[pl[:, 0] >= loss["start"]]
+        if len(seg):
+            p0 = loss["pose"]
+            d = np.hypot(seg[:, 1] - p0[1], seg[:, 2] - p0[2])
+            log.info("navloss", "truth during/after loss", f"max horizontal excursion {d.max() * 100:.1f} cm; z from "
+                     f"{p0[3]:.3f} to {seg[-1, 3]:.3f} m; landed at {loss.get('landed', float('nan')) - loss['start']:+.1f} s "
+                     f"after loss start" if "landed" in loss else f"max horizontal excursion {d.max() * 100:.1f} cm; "
+                     f"z {p0[3]:.3f} -> {seg[-1, 3]:.3f} m; not landed during the window", "OBSERVED")
     if sampler and sampler.rows:
         rows = [r for r in sampler.rows if "reached" in marks and not math.isnan(r["sim"])]
         if len(rows) > 2:

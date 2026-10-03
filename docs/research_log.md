@@ -40,4 +40,7 @@ Chronological engineering log. Each entry carries evidence labels: OBSERVED, SOU
   - `ArduPilotPlugin` forwards it as JSON `rng_1` (SOURCE-CODE VERIFIED), and ArduPilot RFND reads 1.487 m in a 1.5 m hover, status Good.
   - Limitation: on the ground it reports OutOfRangeHigh, because the plugin maps no return to 2 × max. Options are listed for Rohit.
   - All 12 worlds regenerated and re-verified: PASS. See `phase3-sitl.md` §10.2.
+- **ExternalNav plumbing stub (GROUND-TRUTH-DERIVED, PLUMBING TEST ONLY; to be removed once Doshi's SLAM exists):**
+  - It sends MAVLink ODOMETRY (LOCAL_FRD/BODY_FRD) at 30 Hz from Gazebo truth plus noise and drift.
+  - With GPS disabled, both EKF3 cores report "is using external nav data". See `phase3-sitl.md` §10.3.
 
