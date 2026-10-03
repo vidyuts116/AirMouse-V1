@@ -17,3 +17,19 @@ downloads/
 src/ardupilot/
 src/ardupilot_gazebo/
 .venv-ardupilot/
+
+# Raw binary logs: kept outside Git (see logs/RAW_LOG_MANIFEST.md for paths, sizes, SHA-256 and archive location)
+*.BIN
+*.tlog
+*.ips
+# core.ignorecase=true on macOS makes *.BIN also match *.bin; keep ArduPilot SITL eeprom.bin snapshots trackable
+!eeprom.bin
+
+# Never commit SSH keys or credentials
+git_key
+git_key.pub
+id_rsa*
+id_ed25519*
+id_ecdsa*
+*.pem
+.env
