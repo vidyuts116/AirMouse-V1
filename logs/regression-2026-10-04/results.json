@@ -421,7 +421,7 @@
    "stage": 3,
    "item": "helper connection gate (gz topic -i pub=1 sub=4, HasConnections=1)",
    "status": "PASS",
-   "measured": "passed after 2.20 s wall",
+   "measured": "passed after 2.19 s wall",
    "expected": "pass",
    "label": "OBSERVED"
   },
@@ -429,7 +429,7 @@
    "stage": 3,
    "item": "command -> first joint motion latency (sim)",
    "status": "PASS",
-   "measured": "5.0 ms sim (3.9 ms wall)",
+   "measured": "5.0 ms sim (1.9 ms wall)",
    "expected": "<= 20 ms sim",
    "label": "OBSERVED"
   },
@@ -453,7 +453,7 @@
    "stage": 4,
    "item": "rotor_0 t95 from command",
    "status": "PASS",
-   "measured": "40.0 ms",
+   "measured": "45.0 ms",
    "expected": "37.4 \u00b1 10 ms (ANALYTICAL tau*ln20)",
    "label": "OBSERVED"
   },
@@ -469,7 +469,7 @@
    "stage": 4,
    "item": "rotor_1 t95 from command",
    "status": "PASS",
-   "measured": "40.0 ms",
+   "measured": "45.0 ms",
    "expected": "37.4 \u00b1 10 ms (ANALYTICAL tau*ln20)",
    "label": "OBSERVED"
   },
@@ -485,7 +485,7 @@
    "stage": 4,
    "item": "rotor_2 t95 from command",
    "status": "PASS",
-   "measured": "40.0 ms",
+   "measured": "45.0 ms",
    "expected": "37.4 \u00b1 10 ms (ANALYTICAL tau*ln20)",
    "label": "OBSERVED"
   },
@@ -501,7 +501,7 @@
    "stage": 4,
    "item": "rotor_3 t95 from command",
    "status": "PASS",
-   "measured": "40.0 ms",
+   "measured": "45.0 ms",
    "expected": "37.4 \u00b1 10 ms (ANALYTICAL tau*ln20)",
    "label": "OBSERVED"
   },
@@ -517,7 +517,7 @@
    "stage": 5,
    "item": "ground, motors stopped rotor_0 Fz",
    "status": "PASS",
-   "measured": "-0.009810 N (n=50)",
+   "measured": "-0.009810 N (n=51)",
    "expected": "-0.00981 N \u00b11 %",
    "label": "OBSERVED"
   },
@@ -525,7 +525,7 @@
    "stage": 5,
    "item": "ground, motors stopped rotor_0 in-plane |F| and |T| peak",
    "status": "PASS",
-   "measured": "|Fxy|max=7.80e-19 N, |T|max=2.12e-20 N*m",
+   "measured": "|Fxy|max=6.91e-19 N, |T|max=2.66e-20 N*m",
    "expected": "< 1e-3 N, < 1e-4 N*m",
    "label": "OBSERVED"
   },
@@ -533,7 +533,7 @@
    "stage": 5,
    "item": "ground, motors stopped rotor_1 Fz",
    "status": "PASS",
-   "measured": "-0.009810 N (n=50)",
+   "measured": "-0.009810 N (n=51)",
    "expected": "-0.00981 N \u00b11 %",
    "label": "OBSERVED"
   },
@@ -541,7 +541,7 @@
    "stage": 5,
    "item": "ground, motors stopped rotor_1 in-plane |F| and |T| peak",
    "status": "PASS",
-   "measured": "|Fxy|max=9.78e-19 N, |T|max=2.12e-20 N*m",
+   "measured": "|Fxy|max=7.64e-19 N, |T|max=2.66e-20 N*m",
    "expected": "< 1e-3 N, < 1e-4 N*m",
    "label": "OBSERVED"
   },
@@ -549,7 +549,7 @@
    "stage": 5,
    "item": "ground, motors stopped rotor_2 Fz",
    "status": "PASS",
-   "measured": "-0.009810 N (n=50)",
+   "measured": "-0.009810 N (n=51)",
    "expected": "-0.00981 N \u00b11 %",
    "label": "OBSERVED"
   },
@@ -557,7 +557,7 @@
    "stage": 5,
    "item": "ground, motors stopped rotor_2 in-plane |F| and |T| peak",
    "status": "PASS",
-   "measured": "|Fxy|max=1.03e-18 N, |T|max=2.12e-20 N*m",
+   "measured": "|Fxy|max=8.19e-19 N, |T|max=2.66e-20 N*m",
    "expected": "< 1e-3 N, < 1e-4 N*m",
    "label": "OBSERVED"
   },
@@ -565,7 +565,7 @@
    "stage": 5,
    "item": "ground, motors stopped rotor_3 Fz",
    "status": "PASS",
-   "measured": "-0.009810 N (n=50)",
+   "measured": "-0.009810 N (n=51)",
    "expected": "-0.00981 N \u00b11 %",
    "label": "OBSERVED"
   },
@@ -573,7 +573,7 @@
    "stage": 5,
    "item": "ground, motors stopped rotor_3 in-plane |F| and |T| peak",
    "status": "PASS",
-   "measured": "|Fxy|max=1.03e-18 N, |T|max=2.12e-20 N*m",
+   "measured": "|Fxy|max=8.19e-19 N, |T|max=2.66e-20 N*m",
    "expected": "< 1e-3 N, < 1e-4 N*m",
    "label": "OBSERVED"
   },
@@ -589,7 +589,7 @@
    "stage": 5,
    "item": "ground, spun up rotor_0 in-plane |F| and |T| peak",
    "status": "PASS",
-   "measured": "|Fxy|max=1.85e-32 N, |T|max=2.99e-26 N*m",
+   "measured": "|Fxy|max=1.23e-32 N, |T|max=3.64e-25 N*m",
    "expected": "< 1e-3 N, < 1e-4 N*m",
    "label": "OBSERVED"
   },
@@ -605,7 +605,7 @@
    "stage": 5,
    "item": "ground, spun up rotor_1 in-plane |F| and |T| peak",
    "status": "PASS",
-   "measured": "|Fxy|max=1.85e-32 N, |T|max=2.99e-26 N*m",
+   "measured": "|Fxy|max=1.85e-32 N, |T|max=3.64e-25 N*m",
    "expected": "< 1e-3 N, < 1e-4 N*m",
    "label": "OBSERVED"
   },
@@ -621,7 +621,7 @@
    "stage": 5,
    "item": "ground, spun up rotor_2 in-plane |F| and |T| peak",
    "status": "PASS",
-   "measured": "|Fxy|max=1.23e-32 N, |T|max=2.99e-26 N*m",
+   "measured": "|Fxy|max=1.23e-32 N, |T|max=3.64e-25 N*m",
    "expected": "< 1e-3 N, < 1e-4 N*m",
    "label": "OBSERVED"
   },
@@ -637,7 +637,7 @@
    "stage": 5,
    "item": "ground, spun up rotor_3 in-plane |F| and |T| peak",
    "status": "PASS",
-   "measured": "|Fxy|max=1.85e-32 N, |T|max=2.99e-26 N*m",
+   "measured": "|Fxy|max=1.23e-32 N, |T|max=3.64e-25 N*m",
    "expected": "< 1e-3 N, < 1e-4 N*m",
    "label": "OBSERVED"
   },
@@ -653,7 +653,7 @@
    "stage": 5,
    "item": "airborne, spun up rotor_0 in-plane |F| and |T| peak",
    "status": "PASS",
-   "measured": "|Fxy|max=2.47e-32 N, |T|max=2.99e-26 N*m",
+   "measured": "|Fxy|max=2.47e-32 N, |T|max=3.64e-25 N*m",
    "expected": "< 1e-3 N, < 1e-4 N*m",
    "label": "OBSERVED"
   },
@@ -669,7 +669,7 @@
    "stage": 5,
    "item": "airborne, spun up rotor_1 in-plane |F| and |T| peak",
    "status": "PASS",
-   "measured": "|Fxy|max=2.47e-32 N, |T|max=2.99e-26 N*m",
+   "measured": "|Fxy|max=2.47e-32 N, |T|max=3.64e-25 N*m",
    "expected": "< 1e-3 N, < 1e-4 N*m",
    "label": "OBSERVED"
   },
@@ -685,7 +685,7 @@
    "stage": 5,
    "item": "airborne, spun up rotor_2 in-plane |F| and |T| peak",
    "status": "PASS",
-   "measured": "|Fxy|max=2.47e-32 N, |T|max=2.99e-26 N*m",
+   "measured": "|Fxy|max=2.47e-32 N, |T|max=3.64e-25 N*m",
    "expected": "< 1e-3 N, < 1e-4 N*m",
    "label": "OBSERVED"
   },
@@ -701,7 +701,7 @@
    "stage": 5,
    "item": "airborne, spun up rotor_3 in-plane |F| and |T| peak",
    "status": "PASS",
-   "measured": "|Fxy|max=2.47e-32 N, |T|max=2.99e-26 N*m",
+   "measured": "|Fxy|max=2.47e-32 N, |T|max=3.64e-25 N*m",
    "expected": "< 1e-3 N, < 1e-4 N*m",
    "label": "OBSERVED"
   },
@@ -709,7 +709,7 @@
    "stage": 6,
    "item": "a_z at 500 rad/s",
    "status": "PASS",
-   "measured": "-2.68618 m/s^2 (v0 -0.0040 m/s, n=48, window 0.000-0.800 s)",
+   "measured": "-2.68618 m/s^2 (v0 -0.0040 m/s, n=47, window 0.000-0.783 s)",
    "expected": "-2.68618 \u00b10.05 (ANALYTICAL)",
    "label": "OBSERVED"
   },
@@ -717,7 +717,7 @@
    "stage": 6,
    "item": "a_z at 586.8 rad/s",
    "status": "PASS",
-   "measured": "+0.00190 m/s^2 (v0 +0.0001 m/s, n=48, window 0.000-0.799 s)",
+   "measured": "+0.00190 m/s^2 (v0 +0.0001 m/s, n=48, window 0.000-0.800 s)",
    "expected": "+0.00190 \u00b10.05 (ANALYTICAL)",
    "label": "OBSERVED"
   },
@@ -725,7 +725,7 @@
    "stage": 6,
    "item": "a_z at 700 rad/s",
    "status": "PASS",
-   "measured": "+4.15268 m/s^2 (v0 +0.6860 m/s, n=48, window 0.000-0.799 s)",
+   "measured": "+4.15268 m/s^2 (v0 +0.6860 m/s, n=48, window 0.000-0.800 s)",
    "expected": "+4.15268 \u00b10.05 (ANALYTICAL)",
    "label": "OBSERVED"
   },
@@ -749,7 +749,7 @@
    "stage": 8,
    "item": "roll pattern: roll alpha",
    "status": "PASS",
-   "measured": "+3.09547 rad/s^2 (ratio 0.9992; cross-axis -8.7e-20, +7.9e-19; n=16)",
+   "measured": "+3.09547 rad/s^2 (ratio 0.9992; cross-axis +2.3e-19, -2.2e-18; n=16)",
    "expected": "+3.09788 \u00b12 % (ANALYTICAL tau/I_rigid)",
    "label": "OBSERVED"
   },
@@ -757,7 +757,7 @@
    "stage": 8,
    "item": "pitch pattern: pitch alpha",
    "status": "PASS",
-   "measured": "-3.09547 rad/s^2 (ratio 0.9992; cross-axis -2.8e-07, +1.8e-06; n=16)",
+   "measured": "-3.09547 rad/s^2 (ratio 0.9992; cross-axis -3.0e-07, +2.0e-06; n=16)",
    "expected": "-3.09788 \u00b12 % (ANALYTICAL tau/I_rigid)",
    "label": "OBSERVED"
   },
@@ -765,7 +765,7 @@
    "stage": 8,
    "item": "yaw pattern: yaw alpha",
    "status": "PASS",
-   "measured": "-0.09831 rad/s^2 (ratio 0.9995; cross-axis -3.9e-08, -2.8e-10; n=16)",
+   "measured": "-0.09831 rad/s^2 (ratio 0.9995; cross-axis -5.0e-08, -3.5e-10; n=16)",
    "expected": "-0.09836 \u00b12 % (ANALYTICAL tau/I_rigid)",
    "label": "OBSERVED"
   },
@@ -773,7 +773,7 @@
    "stage": 9,
    "item": "Stage 6 a_z @586.8 spread (max-min)/|mean|",
    "status": "PASS",
-   "measured": "0.0042 % (0.0018982, 0.0018982, 0.0018981)",
+   "measured": "0.0172 % (0.0018982, 0.0018985, 0.0018982)",
    "expected": "< 1 %",
    "label": "OBSERVED"
   },
@@ -789,7 +789,7 @@
    "stage": 9,
    "item": "Stage 7 max |z-2| spread (max-min)/|mean|",
    "status": "PASS",
-   "measured": "0.4568 % (0.0070885, 0.0070562, 0.0070619)",
+   "measured": "0.3144 % (0.0070291, 0.0070287, 0.0070508)",
    "expected": "< 1 %",
    "label": "OBSERVED"
   },
@@ -901,7 +901,7 @@
    "stage": 10,
    "item": "IMU rate (sim time)",
    "status": "PASS",
-   "measured": "200.1 Hz over 6.71 s (n=1344)",
+   "measured": "200.0 Hz over 6.80 s (n=1361)",
    "expected": "200 Hz \u00b110 %",
    "label": "OBSERVED"
   },
@@ -909,7 +909,7 @@
    "stage": 10,
    "item": "IMU at rest: accel z",
    "status": "PASS",
-   "measured": "+9.8150 m/s^2 (std 0.0070, n=200)",
+   "measured": "+9.8011 m/s^2 (std 0.0070, n=200)",
    "expected": "+9.81 \u00b10.05 (ANALYTICAL: specific force = g)",
    "label": "OBSERVED"
   },
@@ -917,7 +917,7 @@
    "stage": 10,
    "item": "IMU at rest: accel x, y",
    "status": "PASS",
-   "measured": "-0.0037, -0.0032 m/s^2",
+   "measured": "+0.0031, +0.0029 m/s^2",
    "expected": "0 \u00b10.05",
    "label": "OBSERVED"
   },
@@ -925,7 +925,7 @@
    "stage": 10,
    "item": "IMU at rest: gyro",
    "status": "PASS",
-   "measured": "(-0.00002, +0.00007, -0.00010) rad/s",
+   "measured": "(-0.00010, -0.00006, +0.00015) rad/s",
    "expected": "0 \u00b10.002 rad/s",
    "label": "OBSERVED"
   },
@@ -949,7 +949,7 @@
    "stage": 10,
    "item": "IMU hover 586.8: accel z = thrust/m",
    "status": "PASS",
-   "measured": "+9.8174 m/s^2 (n=180)",
+   "measured": "+9.8031 m/s^2 (n=180)",
    "expected": "+9.81190 \u00b10.05 (ANALYTICAL 4k*w^2/m)",
    "label": "OBSERVED"
   },
@@ -957,7 +957,7 @@
    "stage": 10,
    "item": "IMU climb 700: accel z = thrust/m",
    "status": "PASS",
-   "measured": "+13.9694 m/s^2 (n=90)",
+   "measured": "+13.9536 m/s^2 (n=91)",
    "expected": "+13.96268 \u00b10.05 (ANALYTICAL 4k*w^2/m)",
    "label": "OBSERVED"
   },
@@ -981,7 +981,7 @@
    "stage": 10,
    "item": "LiDAR rate (sim time)",
    "status": "PASS",
-   "measured": "10.08 Hz over 4.26 s (n=44)",
+   "measured": "10.19 Hz over 4.42 s (n=46)",
    "expected": "10 Hz \u00b110 %",
    "label": "OBSERVED"
   },
@@ -997,7 +997,7 @@
    "stage": 10,
    "item": "LiDAR wall range, beams within \u00b125 deg (wall face at 3.0 m)",
    "status": "PASS",
-   "measured": "mean error +0.34 mm over 1500 returns; centre beam 3.0027 m",
+   "measured": "mean error +1.07 mm over 1500 returns; centre beam 3.0000 m",
    "expected": "|mean error| <= 10 mm (ANALYTICAL d/cos(theta))",
    "label": "OBSERVED"
   },
@@ -1005,7 +1005,7 @@
    "stage": 10,
    "item": "LiDAR noise: error std / configured",
    "status": "PASS",
-   "measured": "10.24 mm / 10 mm = 1.02",
+   "measured": "10.70 mm / 10 mm = 1.07",
    "expected": "0.5-2.0",
    "label": "OBSERVED"
   },
@@ -1021,7 +1021,7 @@
    "stage": 10,
    "item": "rangefinder rate (sim time)",
    "status": "PASS",
-   "measured": "50.2 Hz over 5.94 s (n=299)",
+   "measured": "50.1 Hz over 5.99 s (n=301)",
    "expected": "50 Hz \u00b110 %",
    "label": "OBSERVED"
   },
@@ -1037,7 +1037,7 @@
    "stage": 10,
    "item": "rangefinder in hover: range = truth height - mount offset",
    "status": "PASS",
-   "measured": "mean 1.9643 m vs truth 1.9681 m: error -3.8 mm (n=95)",
+   "measured": "mean 1.9667 m vs truth 1.9681 m: error -1.4 mm (n=95)",
    "expected": "|mean error| <= 20 mm",
    "label": "OBSERVED"
   },
@@ -1045,7 +1045,7 @@
    "stage": 10,
    "item": "rangefinder noise: error std / configured",
    "status": "PASS",
-   "measured": "21.0 mm / 20 mm = 1.05",
+   "measured": "19.9 mm / 20 mm = 1.00",
    "expected": "0.5-2.0",
    "label": "OBSERVED"
   },
@@ -1053,7 +1053,7 @@
    "stage": 10,
    "item": "rgb_camera rate (sim time)",
    "status": "PASS",
-   "measured": "10.09 Hz over 4.26 s (n=44)",
+   "measured": "10.00 Hz over 4.50 s (n=46)",
    "expected": "10 Hz \u00b110 %",
    "label": "OBSERVED"
   },
@@ -1083,7 +1083,7 @@
    "stage": 10,
    "item": "diagnostic joint_state rate (jointfix SDF, sim time)",
    "status": "PASS",
-   "measured": "200.0 Hz over 2.95 s",
+   "measured": "200.0 Hz over 2.93 s",
    "expected": "200 Hz \u00b110 %",
    "label": "OBSERVED"
   },
@@ -1091,7 +1091,7 @@
    "stage": 10,
    "item": "diagnostic rotor_0_force_torque rate (jointfix SDF, sim time)",
    "status": "PASS",
-   "measured": "200.0 Hz over 2.94 s",
+   "measured": "200.0 Hz over 2.92 s",
    "expected": "200 Hz \u00b110 %",
    "label": "OBSERVED"
   },
@@ -1099,7 +1099,7 @@
    "stage": 10,
    "item": "diagnostic rotor_1_force_torque rate (jointfix SDF, sim time)",
    "status": "PASS",
-   "measured": "200.0 Hz over 2.94 s",
+   "measured": "200.0 Hz over 2.92 s",
    "expected": "200 Hz \u00b110 %",
    "label": "OBSERVED"
   },
@@ -1107,7 +1107,7 @@
    "stage": 10,
    "item": "diagnostic rotor_2_force_torque rate (jointfix SDF, sim time)",
    "status": "PASS",
-   "measured": "200.0 Hz over 2.94 s",
+   "measured": "200.0 Hz over 2.92 s",
    "expected": "200 Hz \u00b110 %",
    "label": "OBSERVED"
   },
@@ -1115,7 +1115,7 @@
    "stage": 10,
    "item": "diagnostic rotor_3_force_torque rate (jointfix SDF, sim time)",
    "status": "PASS",
-   "measured": "200.0 Hz over 2.94 s",
+   "measured": "200.0 Hz over 2.93 s",
    "expected": "200 Hz \u00b110 %",
    "label": "OBSERVED"
   }
