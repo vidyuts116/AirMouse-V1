@@ -36,7 +36,7 @@ TOOLS = ROOT / "tools"
 BASELINE = ROOT / "simulation" / "airmouse_quadrotor.sdf"
 DIAG_DIR = ROOT / "simulation" / "diagnostics"
 JOINTFIX = DIAG_DIR / "airmouse_force_diagnostic_jointfix.sdf"
-BASELINE_SHA = "1224906b074b16317329e07107e510c751b4693969e1e00ddc48187d8a36b91c"  # IMU + LiDAR (depth camera reverted)
+BASELINE_SHA = "21626e644770873ed59aa6dce6b5ce2f47b11b7ab9e45b5fa1e4f764d3fea88f"  # IMU + LiDAR + RGB camera
 GZ_VERSION = "8.15.0"
 REQUIRED_TOOLS = ["airmouse_hover_helper.cc", "airmouse_sensor_probe.cc", "airmouse_hover_acceptance.py",
                   "airmouse_differential_thrust.py", "measure_airmouse_diagnostic.py"]
@@ -656,62 +656,63 @@ def stages6to9(ctx):
         log(f"  session (baseline SDF): boot audit {s.boot_audit['publishers']} pub / "
             f"{s.boot_audit['subscribers']} sub; gate {s.gate}")
 
-        # Stage 6 --------------------------------------------------------------
-        log.stage(6, "Vertical acceleration (airborne window only; spin-up 200 ms exact on ground)")
-        ok6 = True
-        for omega in (500.0, 586.8, 700.0):
-            t_reset, poses = vertical_run(s, omega, 200, 0.8)
-            az, v0, sel = fit_az(poses, t_reset)
-            pred = predicted_az(omega)
-            ok6 &= log.check(6, f"a_z at {omega:g} rad/s", abs(az - pred) <= 0.05,
-                             f"{fmt(az)} m/s^2 (v0 {v0:+.4f} m/s, n={len(sel)}, "
-                             f"window {sel[0, 0] - t_reset:.3f}-{sel[-1, 0] - t_reset:.3f} s)",
-                             f"{fmt(pred)} ±0.05 (ANALYTICAL)", "OBSERVED")
-            ctx.az6 = getattr(ctx, "az6", {})
-            ctx.az6[omega] = az
-        if not ok6:
-            return 6
+        if not getattr(ctx, "only9", False):
+            # Stage 6 --------------------------------------------------------------
+            log.stage(6, "Vertical acceleration (airborne window only; spin-up 200 ms exact on ground)")
+            ok6 = True
+            for omega in (500.0, 586.8, 700.0):
+                t_reset, poses = vertical_run(s, omega, 200, 0.8)
+                az, v0, sel = fit_az(poses, t_reset)
+                pred = predicted_az(omega)
+                ok6 &= log.check(6, f"a_z at {omega:g} rad/s", abs(az - pred) <= 0.05,
+                                 f"{fmt(az)} m/s^2 (v0 {v0:+.4f} m/s, n={len(sel)}, "
+                                 f"window {sel[0, 0] - t_reset:.3f}-{sel[-1, 0] - t_reset:.3f} s)",
+                                 f"{fmt(pred)} ±0.05 (ANALYTICAL)", "OBSERVED")
+                ctx.az6 = getattr(ctx, "az6", {})
+                ctx.az6[omega] = az
+            if not ok6:
+                return 6
 
-        # Stage 7 --------------------------------------------------------------
-        log.stage(7, "Hover acceptance (spin-up 1000 ms exact on ground, reset z=2, record 2 s)")
-        hover = hover_run(s)
-        ok7 = log.check(7, "|a_z - 0.0019|", abs(hover["az"] - 0.0019) < 0.05,
-                        f"a_z {fmt(hover['az'])} m/s^2 (|diff| {abs(hover['az'] - 0.0019):.5f})", "< 0.05", "OBSERVED")
-        ok7 &= log.check(7, "max |z - 2| over 2 s", hover["zdev"] < 0.02,
-                         f"{hover['zdev']:.5f} m (v0 {hover['v0']:+.5f} m/s, tilt {hover['tilt']:.4f} deg, "
-                         f"drift {hover['drift']:.6f} m, n={hover['n']})", "< 0.02 m", "OBSERVED")
-        if not ok7:
-            return 7
+            # Stage 7 --------------------------------------------------------------
+            log.stage(7, "Hover acceptance (spin-up 1000 ms exact on ground, reset z=2, record 2 s)")
+            hover = hover_run(s)
+            ok7 = log.check(7, "|a_z - 0.0019|", abs(hover["az"] - 0.0019) < 0.05,
+                            f"a_z {fmt(hover['az'])} m/s^2 (|diff| {abs(hover['az'] - 0.0019):.5f})", "< 0.05", "OBSERVED")
+            ok7 &= log.check(7, "max |z - 2| over 2 s", hover["zdev"] < 0.02,
+                             f"{hover['zdev']:.5f} m (v0 {hover['v0']:+.5f} m/s, tilt {hover['tilt']:.4f} deg, "
+                             f"drift {hover['drift']:.6f} m, n={hover['n']})", "< 0.02 m", "OBSERVED")
+            if not ok7:
+                return 7
 
-        # Stage 8 --------------------------------------------------------------
-        log.stage(8, "Differential thrust (delta = 5 rad/s), primary-axis angular acceleration")
-        ok8 = True
-        for pattern, axis_index, axis in (("roll", 0, "roll"), ("pitch", 1, "pitch"), ("yaw", 2, "yaw")):
-            t_reset = s.launch(HOVER_CMD, 1000)
-            s.step(100)                                 # exact 0.1 s airborne hover hold, paused at the end
-            t_cmd = t_reset + 0.1
-            w = HOVER_CMD + 5.0 * dt.PATTERNS[pattern]
-            s.command(list(w))
-            time.sleep(0.15)
-            s.unpause()
-            s.wait_pose(lambda p: p[0] >= t_cmd + 0.35, 15, f"{pattern} window")
-            time.sleep(0.2)
-            sel = s.poses_between(t_cmd, t_cmd + 0.35)
-            s.land()
-            ang = np.array([dt.euler(q) for q in sel[:, 4:8]])
-            t = sel[:, 0] - t_cmd
-            fit = t >= 0.08
-            c = np.polyfit(t[fit], ang[fit, axis_index], 2)
-            alpha = 2 * c[0]
-            _, tau = dt.predicted(HOVER_CMD, 5.0, pattern)
-            pred = tau[axis_index] / dt.I_RIGID[axis_index]
-            others = [2 * np.polyfit(t[fit], ang[fit, j], 2)[0] for j in range(3) if j != axis_index]
-            ok8 &= log.check(8, f"{pattern} pattern: {axis} alpha", abs(alpha - pred) <= 0.02 * abs(pred),
-                             f"{alpha:+.5f} rad/s^2 (ratio {alpha / pred:.4f}; cross-axis "
-                             f"{', '.join(f'{o:+.1e}' for o in others)}; n={fit.sum()})",
-                             f"{pred:+.5f} ±2 % (ANALYTICAL tau/I_rigid)", "OBSERVED")
-        if not ok8:
-            return 8
+            # Stage 8 --------------------------------------------------------------
+            log.stage(8, "Differential thrust (delta = 5 rad/s), primary-axis angular acceleration")
+            ok8 = True
+            for pattern, axis_index, axis in (("roll", 0, "roll"), ("pitch", 1, "pitch"), ("yaw", 2, "yaw")):
+                t_reset = s.launch(HOVER_CMD, 1000)
+                s.step(100)                                 # exact 0.1 s airborne hover hold, paused at the end
+                t_cmd = t_reset + 0.1
+                w = HOVER_CMD + 5.0 * dt.PATTERNS[pattern]
+                s.command(list(w))
+                time.sleep(0.15)
+                s.unpause()
+                s.wait_pose(lambda p: p[0] >= t_cmd + 0.35, 15, f"{pattern} window")
+                time.sleep(0.2)
+                sel = s.poses_between(t_cmd, t_cmd + 0.35)
+                s.land()
+                ang = np.array([dt.euler(q) for q in sel[:, 4:8]])
+                t = sel[:, 0] - t_cmd
+                fit = t >= 0.08
+                c = np.polyfit(t[fit], ang[fit, axis_index], 2)
+                alpha = 2 * c[0]
+                _, tau = dt.predicted(HOVER_CMD, 5.0, pattern)
+                pred = tau[axis_index] / dt.I_RIGID[axis_index]
+                others = [2 * np.polyfit(t[fit], ang[fit, j], 2)[0] for j in range(3) if j != axis_index]
+                ok8 &= log.check(8, f"{pattern} pattern: {axis} alpha", abs(alpha - pred) <= 0.02 * abs(pred),
+                                 f"{alpha:+.5f} rad/s^2 (ratio {alpha / pred:.4f}; cross-axis "
+                                 f"{', '.join(f'{o:+.1e}' for o in others)}; n={fit.sum()})",
+                                 f"{pred:+.5f} ±2 % (ANALYTICAL tau/I_rigid)", "OBSERVED")
+            if not ok8:
+                return 8
 
         # Stage 9 --------------------------------------------------------------
         log.stage(9, "Repeatability: Stage 6 (586.8) x3 and Stage 7 x3")
@@ -1070,6 +1071,8 @@ def main():
     parser.add_argument("--gz-ip", default="127.0.0.1",
                         help="GZ_IP for every process started (default loopback: all processes are local, and "
                              "pinning avoids discovery loss when the network interface changes)")
+    parser.add_argument("--only-stage9", action="store_true",
+                        help="run Stage 0 then only Stage 9 (repeatability) on the baseline")
     args = parser.parse_args()
     os.environ["GZ_IP"] = args.gz_ip
 
@@ -1078,6 +1081,7 @@ def main():
 
     ctx = Ctx()
     ctx.log = log = Log(Path(args.logdir))
+    ctx.only9 = args.only_stage9
     tmp = tempfile.TemporaryDirectory(prefix="airmouse-regression-")
     ctx.binary = Path(tmp.name) / "airmouse_hover_helper"
     ctx.probe_bin = Path(tmp.name) / "airmouse_sensor_probe"
@@ -1085,19 +1089,19 @@ def main():
     log(f"AirMouse regression {datetime.now().isoformat(timespec='seconds')}  root={ROOT}  GZ_IP={os.environ['GZ_IP']}")
     try:
         ctx.gz = gz_bin()
-        plan = [(0, stage0), (1, stage1), (2, stage2)]
+        plan = [(0, stage0)] if ctx.only9 else [(0, stage0), (1, stage1), (2, stage2)]
         for n, fn in plan:
             log.stage(n, STAGE_TITLES[n])
             if not fn(ctx):
                 failed_at = n
                 break
-        if failed_at is None:
+        if failed_at is None and not ctx.only9:
             log.stage(3, "(data collection for Stages 3-5: one session on the jointfix diagnostic SDF)")
             failed_at = stages3to5(ctx)
         if failed_at is None:
             log.stage(6, "(session for Stages 6-9 on the baseline SDF)")
             failed_at = stages6to9(ctx)
-        if failed_at is None:
+        if failed_at is None and not ctx.only9:
             log.stage(10, STAGE_TITLES[10])
             if not stage10(ctx):
                 failed_at = 10
