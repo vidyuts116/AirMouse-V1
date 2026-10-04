@@ -1,0 +1,79 @@
+# ros_gz_bridge configuration for the AirMouse simulation (for Doshi). See docs/interfaces/sim_to_ros.md.
+#
+# Run (ROS 2 Jazzy + Gazebo Harmonic; Gazebo and ROS must share GZ_IP=127.0.0.1):
+#   export GZ_IP=127.0.0.1
+#   ros2 run ros_gz_bridge parameter_bridge --ros-args -p config_file:=config/ros_gz_bridge.yaml -p use_sim_time:=true
+#
+# NOT VERIFIED on this machine: no ROS 2 is installed here. The Gazebo topics, message types and frame ids below
+# were checked against the running simulation; the YAML keys follow the ros_gz_bridge (jazzy) README.
+# `qos_profile` and `frame_id` need a ros_gz_bridge new enough to support them (Jazzy yes; if your version
+# rejects them, delete both keys and set QoS in your subscribers and frames with static TFs instead).
+#
+# frame_id: Gazebo stamps messages with scoped names ("airmouse::base_link::imu_sensor"); the entries below
+# rewrite them to the ROS names used in docs/interfaces/sim_to_ros.md section 3.
+
+# --- simulated time -------------------------------------------------------------------------------------
+- ros_topic_name: /clock
+  gz_topic_name: /clock
+  ros_type_name: rosgraph_msgs/msg/Clock
+  gz_type_name: gz.msgs.Clock
+  direction: GZ_TO_ROS
+  qos_profile: CLOCK
+
+# --- baseline sensors (Gazebo -> ROS only; the vehicle is commanded by ArduPilot, never from ROS) ---------
+- ros_topic_name: /airmouse/imu
+  gz_topic_name: /airmouse/imu
+  ros_type_name: sensor_msgs/msg/Imu
+  gz_type_name: gz.msgs.IMU
+  direction: GZ_TO_ROS
+  qos_profile: SENSOR_DATA
+  frame_id: imu_link
+
+- ros_topic_name: /airmouse/lidar
+  gz_topic_name: /airmouse/lidar
+  ros_type_name: sensor_msgs/msg/LaserScan
+  gz_type_name: gz.msgs.LaserScan
+  direction: GZ_TO_ROS
+  qos_profile: SENSOR_DATA
+  frame_id: lidar_link
+
+- ros_topic_name: /airmouse/camera
+  gz_topic_name: /airmouse/camera
+  ros_type_name: sensor_msgs/msg/Image
+  gz_type_name: gz.msgs.Image
+  direction: GZ_TO_ROS
+  qos_profile: SENSOR_DATA
+  frame_id: camera_optical_link
+
+- ros_topic_name: /airmouse/camera_info
+  gz_topic_name: /airmouse/camera_info
+  ros_type_name: sensor_msgs/msg/CameraInfo
+  gz_type_name: gz.msgs.CameraInfo
+  direction: GZ_TO_ROS
+  qos_profile: SENSOR_DATA
+  frame_id: camera_optical_link
+
+- ros_topic_name: /airmouse/rangefinder
+  gz_topic_name: /airmouse/rangefinder
+  ros_type_name: sensor_msgs/msg/LaserScan
+  gz_type_name: gz.msgs.LaserScan
+  direction: GZ_TO_ROS
+  qos_profile: SENSOR_DATA
+  frame_id: rangefinder_link
+
+# --- EXPERIMENTAL depth fallback (only in simulation/experimental/depth_lidar_diagnostic.sdf) -------------
+# Multi-row LaserScan is NOT convertible by ros_gz_bridge; use the point cloud.
+# - ros_topic_name: /airmouse/depth_lidar/points
+#   gz_topic_name: /airmouse/depth_lidar/points
+#   ros_type_name: sensor_msgs/msg/PointCloud2
+#   gz_type_name: gz.msgs.PointCloudPacked
+#   direction: GZ_TO_ROS
+#   qos_profile: SENSOR_DATA
+#   frame_id: depth_lidar_link
+
+# --- GROUND TRUTH, evaluation only (never feed it to SLAM or ArduPilot) -----------------------------------
+# - ros_topic_name: /airmouse/ground_truth/pose_array
+#   gz_topic_name: /world/airmouse_physics/pose/info
+#   ros_type_name: geometry_msgs/msg/PoseArray
+#   gz_type_name: gz.msgs.Pose_V
+#   direction: GZ_TO_ROS

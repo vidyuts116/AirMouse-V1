@@ -67,7 +67,7 @@
       <!-- Diagnostic-only joint telemetry for motor tests. -->
       <plugin filename="gz-sim-joint-state-publisher-system" name="gz::sim::systems::JointStatePublisher"><topic>/airmouse/diagnostic/joint_state</topic><update_rate>200</update_rate><joint_name>rotor_0_joint</joint_name><joint_name>rotor_1_joint</joint_name><joint_name>rotor_2_joint</joint_name><joint_name>rotor_3_joint</joint_name></plugin>
     </model>
-    <model name="ground_plane"><static>true</static><link name="link"><collision name="collision"><geometry><plane><normal>0 0 1</normal><size>20 20</size></plane></geometry></collision><visual name="visual"><geometry><plane><normal>0 0 1</normal><size>20 20</size></plane></geometry><material><ambient>0.45 0.45 0.45 1</ambient><diffuse>0.45 0.45 0.45 1</diffuse></material></visual></link></model>
+    <model name="ground_plane"><static>true</static><link name="link"><collision name="collision"><geometry><plane><normal>0 0 1</normal><size>20 20</size></plane></geometry></collision><visual name="visual"><geometry><mesh><uri>../materials/floor_20m.obj</uri></mesh></geometry><material><ambient>1 1 1 1</ambient><diffuse>1 1 1 1</diffuse><specular>0.05 0.05 0.05 1</specular><pbr><metal><albedo_map>../materials/floor_concrete.png</albedo_map><roughness>0.9</roughness><metalness>0</metalness></metal></pbr></material></visual></link></model>
     <light name="sun" type="directional"><pose>0 0 10 0 0 0</pose><diffuse>0.8 0.8 0.8 1</diffuse><direction>-0.5 0.2 -1</direction></light>
   </world>
 </sdf>

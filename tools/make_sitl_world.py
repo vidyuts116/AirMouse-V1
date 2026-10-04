@@ -10,6 +10,10 @@ Injects into the `airmouse` model, without touching any physics:
     ArduPilotPlugin passes IMU data to SITL unchanged and assumes FRD (ArduPilotPlugin.cc:1732-1750) and
     always subscribes to the default topic (ArduPilotPlugin.cc:1165). The original FLU IMU on /airmouse/imu
     is kept unchanged (ROS interface contract).
+Option --profile NAME applies a realism profile from config/sim_profiles.yaml (ideal / nominal / degraded):
+wind (gz WindEffects on base_link), IMU noise + bias on BOTH IMUs (FLU /airmouse/imu and the FRD ArduPilot
+copy), and LiDAR dropout (the 2D LiDAR publishes on /airmouse/lidar_raw and airmouse::LidarDropout republishes
+it on /airmouse/lidar). Output: <world>_sitl_<profile>.sdf. Baseline physics is never edited.
 Option --hold-pitch-deg D writes a DIAGNOSTIC ground-check world: base_link fixed to the world at 0.5 m,
 pitched D degrees nose-up (aircraft convention), so the IMUs see a steady tilt. Never fly that world.
 
@@ -24,11 +28,13 @@ PWM 1000-2000 us maps linearly to 0-800 rad/s (= maxRotVelocity).
 
 import argparse
 import hashlib
+import json
 import math
 import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+PROFILES = ROOT / "config" / "sim_profiles.yaml"
 SERVO_TO_ROTOR = {1: 2, 2: 3, 3: 1, 4: 0}
 PWM_MIN, PWM_MAX, OMEGA_MAX = 1000, 2000, 800.0
 
@@ -64,10 +70,131 @@ def sitl_block():
         + "".join(f"<joint_name>rotor_{r}_joint</joint_name>" for r in range(4)) + "</plugin>\n")
 
 
+def parse_simple_yaml(text):
+    """The subset used by config/sim_profiles.yaml: nested maps by 2-space indent, scalars, [a, b] lists,
+    # comments. Used when PyYAML is not installed."""
+    def scalar(v):
+        v = v.strip()
+        if v.startswith("["):
+            return [scalar(x) for x in v.strip("[]").split(",") if x.strip()]
+        if v in ("true", "false"):
+            return v == "true"
+        try:
+            return int(v)
+        except ValueError:
+            try:
+                return float(v)
+            except ValueError:
+                return v.strip("'\"")
+    root, stack = {}, [(-1, {})]
+    stack[0] = (-1, root)
+    for raw in text.splitlines():
+        line = raw.split(" #")[0].rstrip() if not raw.lstrip().startswith("#") else ""
+        if not line.strip():
+            continue
+        indent = len(line) - len(line.lstrip())
+        key, _, val = line.strip().partition(":")
+        while stack[-1][0] >= indent:
+            stack.pop()
+        if val.strip():
+            stack[-1][1][key] = scalar(val)
+        else:
+            stack[-1][1][key] = child = {}
+            stack.append((indent, child))
+    return root
+
+
+def load_profile(name, path=None):
+    text = Path(path or PROFILES).read_text()
+    try:
+        import yaml
+        data = yaml.safe_load(text)
+    except ImportError:
+        data = parse_simple_yaml(text)
+    profiles = data["profiles"]
+    if name not in profiles:
+        raise SystemExit(f"unknown profile '{name}'; available: {', '.join(profiles)}")
+    return profiles[name]
+
+
+def noise_xml(kind, sigma, bias_sigma, dyn_sigma, corr):
+    return (f'<noise type="gaussian"><mean>0</mean><stddev>{sigma:g}</stddev><bias_mean>0</bias_mean>'
+            f"<bias_stddev>{bias_sigma:g}</bias_stddev><dynamic_bias_stddev>{dyn_sigma:g}</dynamic_bias_stddev>"
+            f"<dynamic_bias_correlation_time>{corr:g}</dynamic_bias_correlation_time></noise>")
+
+
+def apply_imu_profile(text, imu):
+    """Replace the noise of every IMU sensor's angular_velocity / linear_acceleration axes."""
+    corr = imu["dynamic_bias_correlation_time_s"]
+    gyro = noise_xml("gyro", imu["gyro_noise_stddev"], imu["gyro_bias_stddev"], imu["gyro_dynamic_bias_stddev"], corr)
+    acc = noise_xml("accel", imu["accel_noise_stddev"], imu["accel_bias_stddev"], imu["accel_dynamic_bias_stddev"], corr)
+    count = 0
+
+    def sensor(m):
+        nonlocal count
+        count += 1
+        block = m.group(0)
+        for tag, n in (("angular_velocity", gyro), ("linear_acceleration", acc)):
+            block, k = re.subn(rf"(<{tag}>).*?(</{tag}>)",
+                               lambda mm: mm.group(1) + "".join(f"<{a}>{n}</{a}>" for a in "xyz") + mm.group(2),
+                               block, flags=re.S)
+            assert k == 1, f"{tag} noise block not found"
+        return block
+    text = re.sub(r'<sensor name="imu_sensor[^"]*" type="imu">.*?</sensor>', sensor, text, flags=re.S)
+    assert count == 2, f"expected 2 IMU sensors (FLU + FRD), found {count}"
+    return text
+
+
+# gz-sim 8.15 WindEffects: the source reads F = mass * scale * (wind - velocity), but MEASURED on the AirMouse
+# (logs/sim-step2-profiles/wind-calibration): steady 2 m/s wind, hover lean 0.11/1.04/4.17/11.49 deg at
+# force_approximation_scaling_factor 0.1/0.3/0.6/1.0, i.e. F = mass * scale^2 * (wind - velocity) (also on the
+# vertical axis: free-fall terminal speed 9.84 m/s at scale 1). So drag k [1/s] = scale^2 and scale = sqrt(k).
+# The wind also ramps up over the first ~10-30 s (time_for_rise).
+
+
+def apply_wind_profile(text, w):
+    text, k = re.subn(r'(<link name="base_link">)', r"\1\n        <enable_wind>true</enable_wind>", text, count=1)
+    assert k == 1
+    v = w["mean_velocity"]
+    block = (
+        "    <!-- Wind (profile): generated by tools/make_sitl_world.py from config/sim_profiles.yaml. -->\n"
+        f"    <wind><linear_velocity>{v[0]:g} {v[1]:g} {v[2]:g}</linear_velocity></wind>\n"
+        '    <plugin filename="gz-sim-wind-effects-system" name="gz::sim::systems::WindEffects">\n'
+        f"      <force_approximation_scaling_factor>{math.sqrt(w['drag_per_s']):.5g}</force_approximation_scaling_factor>\n"
+        "      <horizontal>\n"
+        f"        <magnitude><time_for_rise>10</time_for_rise><sin><amplitude_percent>{w['gust_amplitude_percent']:g}"
+        f"</amplitude_percent><period>{w['gust_period_s']:g}</period></sin>"
+        f'<noise type="gaussian"><mean>0</mean><stddev>{w["magnitude_noise_stddev"]:g}</stddev></noise></magnitude>\n'
+        f"        <direction><time_for_rise>30</time_for_rise><sin><amplitude>{w['direction_amplitude_deg']:g}</amplitude>"
+        f"<period>{w['direction_period_s']:g}</period></sin>"
+        f'<noise type="gaussian"><mean>0</mean><stddev>{w["direction_noise_stddev"]:g}</stddev></noise></direction>\n'
+        "      </horizontal>\n"
+        f'      <vertical><noise type="gaussian"><mean>0</mean><stddev>{w["vertical_noise_stddev"]:g}</stddev></noise>'
+        "</vertical>\n    </plugin>\n")
+    assert text.count("  </world>") == 1
+    return text.replace("  </world>", block + "  </world>")
+
+
+def apply_lidar_profile(text, d):
+    """2D LiDAR publishes on /airmouse/lidar_raw; AirMouseLidarDropout republishes it on /airmouse/lidar."""
+    text, k = re.subn(r'(<sensor name="lidar_2d" type="gpu_lidar">.*?<topic>)/airmouse/lidar(</topic>)',
+                      r"\1/airmouse/lidar_raw\2", text, count=1, flags=re.S)
+    assert k == 1, "lidar_2d topic not found"
+    plugin = ("      <!-- LiDAR dropout (profile): /airmouse/lidar_raw -> /airmouse/lidar. -->\n"
+              '      <plugin filename="AirMouseLidarDropout" name="airmouse::LidarDropout">'
+              "<input_topic>/airmouse/lidar_raw</input_topic><output_topic>/airmouse/lidar</output_topic>"
+              f"<beam_dropout_prob>{d['beam_dropout_prob']:g}</beam_dropout_prob>"
+              f"<scan_dropout_prob>{d['scan_dropout_prob']:g}</scan_dropout_prob><seed>{d['seed']}</seed></plugin>\n")
+    end = text.index("    </model>", text.index('<model name="airmouse"'))
+    return text[:end] + plugin + text[end:]
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("world", nargs="?", default=str(ROOT / "simulation" / "worlds" / "empty.sdf"))
     parser.add_argument("--out", default=str(ROOT / "simulation" / "sitl"))
+    parser.add_argument("--profile", default=None,
+                        help="realism profile from config/sim_profiles.yaml (ideal, nominal, degraded)")
+    parser.add_argument("--profiles-file", default=None, help="alternative profiles YAML (default config/sim_profiles.yaml)")
     parser.add_argument("--hold-pitch-deg", type=float, default=None,
                         help="diagnostic: hold the vehicle fixed at 0.5 m, pitched this many degrees nose-up")
     args = parser.parse_args()
@@ -94,6 +221,16 @@ def main():
     i = out_text.index('<link name="base_link">')
     j = out_text.index("      </link>", i)
     out_text = out_text[:j] + frd_block + out_text[j:]
+    profile = None
+    if args.profile:
+        profile = load_profile(args.profile, args.profiles_file)
+        if profile.get("imu", {}).get("enabled"):
+            out_text = apply_imu_profile(out_text, profile["imu"])
+        if profile.get("wind", {}).get("enabled"):
+            out_text = apply_wind_profile(out_text, profile["wind"])
+        if profile.get("lidar_dropout", {}).get("enabled"):
+            out_text = apply_lidar_profile(out_text, profile["lidar_dropout"])
+        dst = out / f"{src.stem}_sitl_{args.profile}.sdf"
     if args.hold_pitch_deg is not None:
         # SDF rpy is about the model's FLU axes: nose-up is a NEGATIVE rotation about +y.
         pitch = -math.radians(args.hold_pitch_deg)
@@ -107,7 +244,10 @@ def main():
                     "<child>base_link</child></joint>\n" + out_text[end2:])
         dst = out / f"{src.stem}_sitl_hold_pitch{args.hold_pitch_deg:g}.sdf"
     dst.write_text(out_text)
-    print(f"{dst.relative_to(ROOT)} from {src.relative_to(ROOT)} "
+    if profile is not None:
+        (dst.with_suffix(".profile.json")).write_text(json.dumps({"profile": args.profile, **profile}, indent=1) + "\n")
+    rel = lambda q: q.relative_to(ROOT) if q.is_relative_to(ROOT) else q
+    print(f"{rel(dst)} from {rel(src)} "
           f"(source sha256 {hashlib.sha256(src.read_bytes()).hexdigest()[:8]})")
 
 

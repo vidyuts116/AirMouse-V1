@@ -1,0 +1,29 @@
+AirMouse SITL flight test 2026-10-04T18:30:22: simulation/sitl/empty_sitl_nominal.sdf, takeoff 1.5 m, hover 50.0 s; params PROVISIONAL (not flight-approved)
+  *** ExternalNav stub started: GROUND-TRUTH-DERIVED, PLUMBING TEST ONLY ***
+  EKF ready: 'EKF3 IMU0 is using external nav data'
+  arm attempt 1: Arm: Accels inconsistent
+  arm attempt 2: Arm: Accels inconsistent
+  arm attempt 3: Arm: Gyros inconsistent
+  [PASS] GUIDED + arm: measured ARMED | expected ARMED (OBSERVED)
+  [PASS] takeoff to 1.5 m (truth z >= target - 0.1 m): measured reached z 1.537 m at t=35.53 | expected z_home 0.040 + 1.5 = 1.540 m (OBSERVED)
+  [PASS] switch to LOITER (RC 1-4 = 1500): measured LOITER | expected LOITER (OBSERVED)
+  ExternalNav LOSS started at sim t=45.70
+  [PASS] stable hover (|tilt| <= 30 deg, |z err| <= 1 m): measured stable | expected stable (OBSERVED)
+  [PASS] LAND -> auto-disarm: measured DISARMED | expected DISARMED (OBSERVED)
+  [INFO] window 5.0-55.3 s after reaching target (n=2961, pose dt 17 ms):  (OBSERVED)
+  [INFO] altitude hold error (truth z - target): mean -1.4 cm, std 0.4 cm, max |err| 2.3 cm; overshoot after reaching +7.5 cm (OBSERVED)
+  [INFO] attitude (truth): roll std 0.06 deg (peak 0.23), pitch std 0.07 deg (peak 0.46); roll p-p 0.37 deg; dominant roll freq 0.04 Hz; yaw drift 0.05 deg (OBSERVED)
+  [INFO] horizontal position hold (truth): max drift 1.8 cm from window start (OBSERVED)
+  [INFO] learned MOT_THST_HOVER (after disarm, MOT_HOVER_LEARN 2): 0.4882 vs analytical 0.5379 (spin 0/1), 0.5319 (spin 0.15/0.95 (defaults)); initial 0.54 (OBSERVED vs ANALYTICAL)
+  [INFO] ArduPilot rangefinder (dataflash RFND; status 3 = OutOfRangeHigh, 4 = Good): hover Dist mean 1.485 m (std 2.7 cm, status [4]); before takeoff status [3] (OBSERVED)
+  [INFO] dataflash CTUN hover throttle: ThH 0.5400 -> 0.4882 over 57 s airborne; ThO mean (last 20 s airborne) 0.4858 (OBSERVED)
+  [PASS] VISP (ExternalNav pose) records received and consumed: measured 1063 records over 35.3 s, ignored 0, quality [100] | expected > 0, none ignored (OBSERVED)
+  [INFO] EKF-related messages: EKF3 IMU0 stopped aiding | EKF3 IMU1 stopped aiding (OBSERVED)
+  [INFO] EKF position vs ExternalNav input (last 5 s, vehicle at rest): EKF PN/PE/PD +0.000/+0.000/-0.091 m, yaw 1.54 deg; VISP PX/PY/PZ -0.033/-0.000/-1.501 m, yaw -0.13 deg (OBSERVED)
+  [INFO] ArduPilot messages / mode changes relative to ExternalNav loss start: -1.1s MODE LOITER | +15.1s EKF3 IMU0 stopped aiding | +15.1s EKF3 IMU1 stopped aiding (OBSERVED)
+  [INFO] truth during/after loss: max horizontal excursion 1.9 cm; z 1.523 -> 0.040 m; not landed during the window (OBSERVED)
+  [INFO] mean CPU (100 % = one core) / peak RSS: gz_sim CPU 43 % / RSS 194 MB; arducopter CPU 6 % / RSS 5 MB; mavproxy CPU 6 % / RSS 92 MB (OBSERVED)
+  [INFO] real-time factor (Gazebo sim time / wall time): 0.995 over 99 s (OBSERVED)
+
+Cleanup: gz sim processes left = 0; run files in logs/sim-step2-profiles/flight_empty_sitl_nominal_183022
+OVERALL: PASS

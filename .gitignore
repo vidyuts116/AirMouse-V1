@@ -33,3 +33,6 @@ id_ed25519*
 id_ecdsa*
 *.pem
 .env
+
+# Per-run logs written by scripts/launch_sim.sh
+logs/launch-*/

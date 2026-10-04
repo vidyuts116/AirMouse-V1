@@ -1,0 +1,77 @@
+Connect tcp:127.0.0.1:5760 source_system=255
+Log Directory: /Users/arif_svii/Drone/logs/sim-step2-profiles/wind-calibration/flight_empty_sitl_s01_182314/
+Telemetry log: /Users/arif_svii/Drone/logs/sim-step2-profiles/wind-calibration/flight_empty_sitl_s01_182314/mav.tlog
+Waiting for heartbeat from tcp:127.0.0.1:5760
+MAV> Detected vehicle 1:1 on link 0
+online system 1
+STABILIZE> Mode STABILIZE
+AP: Calibrating barometer
+AP: Initialising ArduPilot
+AP: ArduCopter V4.6.3 (92b0cd78)
+AP: D3FAULT-2.local
+AP: Frame: QUAD/X_REV
+Received 1412 parameters (ftp)
+Saved 1412 parameters to /Users/arif_svii/Drone/logs/sim-step2-profiles/wind-calibration/flight_empty_sitl_s01_182314/mav.parm
+Saved 1412 defaults to /Users/arif_svii/Drone/logs/sim-step2-profiles/wind-calibration/flight_empty_sitl_s01_182314/defaults.parm
+AP: Barometer 1 calibration complete
+AP: Barometer 2 calibration complete
+AP: ArduPilot Ready
+fence present
+AP: Field Elevation Set: 584m
+Flight battery warning
+AP: RC7: SaveWaypoint LOW
+AP: EKF3 IMU0 initialised
+AP: EKF3 IMU1 initialised
+AP: EKF3 IMU0 tilt alignment complete
+AP: EKF3 IMU1 tilt alignment complete
+AP: EKF3 IMU0 yaw aligned
+AP: EKF3 IMU1 yaw aligned
+AP: EKF3 IMU0 is using external nav data
+AP: EKF3 IMU0 initial pos NED = -0.0,-0.0,-0.0 (m)
+AP: EKF3 IMU0 initial vel NED = -0.1,-0.0,0.1 (m/s)
+AP: EKF3 IMU1 is using external nav data
+AP: EKF3 IMU1 initial pos NED = -0.0,-0.0,-0.0 (m)
+AP: EKF3 IMU1 initial vel NED = -0.1,-0.0,0.1 (m/s)
+mode guided
+STABILIZE> Got COMMAND_ACK: DO_SET_MODE: ACCEPTED
+GUIDED> Mode GUIDED
+arm throttle
+GUIDED> Got COMMAND_ACK: COMPONENT_ARM_DISARM: FAILED
+AP: Arm: Accels inconsistent
+mode guided
+GUIDED> Got COMMAND_ACK: DO_SET_MODE: ACCEPTED
+arm throttle
+GUIDED> Got COMMAND_ACK: COMPONENT_ARM_DISARM: FAILED
+AP: Arm: Accels inconsistent
+mode guided
+GUIDED> Got COMMAND_ACK: DO_SET_MODE: ACCEPTED
+arm throttle
+GUIDED> Got COMMAND_ACK: COMPONENT_ARM_DISARM: FAILED
+AP: Arm: Gyros inconsistent
+mode guided
+GUIDED> Got COMMAND_ACK: DO_SET_MODE: ACCEPTED
+arm throttle
+GUIDED> Got COMMAND_ACK: COMPONENT_ARM_DISARM: ACCEPTED
+AP: Arming motors
+ARMED
+takeoff 1.5
+GUIDED> Taking off to 1.5 meters
+Got COMMAND_ACK: NAV_TAKEOFF: ACCEPTED
+rc 1 1500
+GUIDED> rc 2 1500
+GUIDED> rc 3 1500
+GUIDED> rc 4 1500
+GUIDED> mode loiter
+GUIDED> Got COMMAND_ACK: DO_SET_MODE: ACCEPTED
+LOITER> Mode LOITER
+mode land
+LOITER> Got COMMAND_ACK: DO_SET_MODE: ACCEPTED
+LAND> Mode LAND
+AP: Disarming motors
+Flight battery 100 percent
+DISARMED
+param fetch MOT_THST_HOVER
+LAND> Requested parameter MOT_THST_HOVER
+MOT_THST_HOVER = 0.4977264
+param show MOT_THST_HOVER
+LAND> MOT_THST_HOVER   0.4977264106273651

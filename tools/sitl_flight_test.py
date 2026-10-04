@@ -103,7 +103,7 @@ def main():
     os.environ["GZ_IP"] = "127.0.0.1"
     os.environ["PATH"] = f"{VENV}:/opt/homebrew/bin:" + os.environ["PATH"]
     os.environ["GZ_SIM_SYSTEM_PLUGIN_PATH"] = str(ROOT / "src" / "airmouse_sitl_bridge" / "build")
-    log = reg.Log(Path(args.logdir))
+    log = reg.Log(Path(args.logdir).resolve())
     run = log.dir / f"flight_{world.stem}_{datetime.now():%H%M%S}"
     run.mkdir(parents=True, exist_ok=True)
     gz = reg.gz_bin()

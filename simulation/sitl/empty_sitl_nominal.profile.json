@@ -1,0 +1,37 @@
+{
+ "profile": "nominal",
+ "description": "Light indoor draught, consumer-MEMS IMU with moderate motor vibration, rare LiDAR dropouts.",
+ "wind": {
+  "enabled": true,
+  "mean_velocity": [
+   0.5,
+   0.2,
+   0.0
+  ],
+  "drag_per_s": 0.05,
+  "gust_amplitude_percent": 0.4,
+  "gust_period_s": 12.0,
+  "magnitude_noise_stddev": 0.05,
+  "direction_amplitude_deg": 15.0,
+  "direction_period_s": 25.0,
+  "direction_noise_stddev": 0.02,
+  "vertical_noise_stddev": 0.02,
+  "seed": 11
+ },
+ "imu": {
+  "enabled": true,
+  "gyro_noise_stddev": 0.003,
+  "gyro_bias_stddev": 0.002,
+  "gyro_dynamic_bias_stddev": 0.0001,
+  "accel_noise_stddev": 0.05,
+  "accel_bias_stddev": 0.05,
+  "accel_dynamic_bias_stddev": 0.002,
+  "dynamic_bias_correlation_time_s": 300.0
+ },
+ "lidar_dropout": {
+  "enabled": true,
+  "beam_dropout_prob": 0.01,
+  "scan_dropout_prob": 0.005,
+  "seed": 21
+ }
+}

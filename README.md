@@ -83,6 +83,16 @@ python3 tools/make_maze.py all --variants 5       # writes simulation/worlds/*.s
 python3 tools/verify_world_lidar.py all           # LiDAR vs ray cast in every world
 ```
 
+**One-command launch** (for teammates; details in the script header):
+
+```sh
+scripts/launch_sim.sh nidar_maze                       # Gazebo server only
+scripts/launch_sim.sh nidar_maze --sitl                # + ArduCopter SITL + MAVProxy (udp 14550/14551)
+scripts/launch_sim.sh nidar_maze --sitl --profile nominal   # realism profile: ideal | nominal | degraded
+```
+
+`--gui` also opens the Gazebo GUI (**NOT VERIFIED** on macOS).
+
 **Build ArduCopter SITL and the Gazebo bridge** (use `-j4` or lower). Activate the venv *after* setting PATH, so `waf` uses the venv Python:
 
 ```sh
@@ -117,6 +127,10 @@ python3 tools/sitl_flight_test.py simulation/sitl/empty_sitl.sdf --stub --mode l
 |---|---|
 | `simulation/airmouse_quadrotor.sdf` | The physics and sensor **baseline**. Change it only with approval, and re-run the regression afterwards. |
 | `simulation/worlds/` | Generated Phase 2 worlds (`*.sdf`) and their geometry sidecars (`*.json`). |
+| `simulation/materials/` | Generated floor texture and tiled floor mesh used by the worlds (visual only). |
+| `simulation/experimental/` | Experimental diagnostic copies (multi-row LiDAR depth fallback). Not covered by the regression. |
+| `config/` | `sim_profiles.yaml` (ideal / nominal / degraded realism profiles, PROVISIONAL), `ros_gz_bridge.yaml` (for Doshi, NOT VERIFIED: no ROS here). |
+| `scripts/` | `launch_sim.sh`, the one-command launcher. |
 | `simulation/sitl/` | Generated SITL worlds and ArduPilot parameter files (PROVISIONAL). |
 | `simulation/diagnostics/` | Diagnostic world copies (force/torque sensors, joint telemetry). Two of them keep the legacy pre-fix geometry, for history only. |
 | `tools/` | Regression, world generation and verification, SITL bridge tests, and C++ helpers (`airmouse_hover_helper.cc`, `airmouse_sensor_probe.cc`). |
@@ -148,6 +162,10 @@ python3 tools/sitl_flight_test.py simulation/sitl/empty_sitl.sdf --stub --mode l
 - the failsafe contract
 - the acceptance tests
 
+**For Doshi (simulation → ROS):** [docs/interfaces/sim_to_ros.md](docs/interfaces/sim_to_ros.md) lists the topics, types, frames, QoS and `use_sim_time` set-up, with `config/ros_gz_bridge.yaml`. **NOT VERIFIED** (no ROS 2 on the simulation machine). The depth-fallback proposal is [docs/interfaces/depth_fallback_proposal.md](docs/interfaces/depth_fallback_proposal.md).
+
+**Realism profiles:** [docs/sim-realism-profiles.md](docs/sim-realism-profiles.md) (wind, IMU noise/bias, LiDAR dropout; all values PROVISIONAL; GPS-denied stub flight and ExternalNav-loss results under each profile).
+
 **For Rohit (ArduPilot parameters, all PROVISIONAL, not flight-approved, simulation only):**
 
 | File | Contents |
@@ -161,7 +179,7 @@ Decisions still open for Rohit are listed in `docs/phase3-sitl.md` §9.6 and §1
 
 ## 7. Known issues
 
-- **KNOWN ISSUE: depth camera.** A `depth_camera` sensor crashes `gz sim` (Ogre2 on Metal: `RGBA32Uint` pipeline exception) as soon as anything subscribes to it. The OpenGL backend crashes earlier. It has been removed from the baseline. The fallback is a multi-row `gpu_lidar`. See `docs/uav-physics-baseline.md`.
+- **KNOWN ISSUE: depth camera.** A `depth_camera` sensor crashes `gz sim` (Ogre2 on Metal: `RGBA32Uint` pipeline exception) as soon as anything subscribes to it. The OpenGL backend crashes earlier. It has been removed from the baseline. The fallback is a multi-row `gpu_lidar`: a 64×16, 60°×30° diagnostic copy is verified against ray casts (`simulation/experimental/`, [proposal](docs/interfaces/depth_fallback_proposal.md)); the baseline is unchanged. See `docs/uav-physics-baseline.md`.
 - **SAFETY FINDING: ExternalNav-loss failsafe gap.**
   - In SITL, stopping the ExternalNav stream mid-hover gave `EKF3 stopped aiding` after 15 s.
   - That was followed by **no failsafe and no mode change for at least 25 s**, with the vehicle dead-reckoning in LOITER. Default `FS_EKF_*` settings were used.

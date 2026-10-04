@@ -1,0 +1,86 @@
+# AirMouse simulation realism profiles, applied by tools/make_sitl_world.py --profile <name>.
+#
+# ALL VALUES ARE PROVISIONAL ENGINEERING ASSUMPTIONS, not measurements of the real vehicle: they bracket
+# a plausible range so the stack can be stress-tested. Replace them with measured values (IMU log noise,
+# vibration spectrum, wind at the venue, LiDAR dropout rate) when the hardware exists.
+# The physics baseline (simulation/airmouse_quadrotor.sdf) is never edited: a profile only rewrites the
+# generated SITL world. 'ideal' leaves the world exactly as the baseline defines it.
+#
+# Units: velocity m/s (world ENU: x east, y north, z up), IMU noise in rad/s and m/s^2 (sigma per sample).
+# Keep this file to the simple "key: value" / nested-map / [a, b, c] subset (tools parse it without PyYAML).
+
+profiles:
+
+  ideal:
+    description: Baseline sensors, still air, no LiDAR dropout. Identical to the unprofiled SITL world.
+    wind:
+      enabled: false
+    imu:
+      enabled: false
+    lidar_dropout:
+      enabled: false
+
+  nominal:
+    description: Light indoor draught, consumer-MEMS IMU with moderate motor vibration, rare LiDAR dropouts.
+    wind:
+      enabled: true
+      # Gazebo WindEffects: world wind vector + slow sinusoidal magnitude/direction variation + gaussian noise.
+      mean_velocity: [0.5, 0.2, 0.0]
+      # Effective linear drag coefficient k (1/s): base_link feels F = mass * k * (wind - vehicle velocity).
+      # (Also damps the vehicle's own motion, on every axis, in this profile.) tools/make_sitl_world.py converts k to the
+      # WindEffects force_approximation_scaling_factor = sqrt(k) (measured: the plugin's force goes as scale^2).
+      # The wind ramps up over its first 10-30 s.
+      drag_per_s: 0.05
+      gust_amplitude_percent: 0.4
+      gust_period_s: 12.0
+      magnitude_noise_stddev: 0.05
+      direction_amplitude_deg: 15.0
+      direction_period_s: 25.0
+      direction_noise_stddev: 0.02
+      vertical_noise_stddev: 0.02
+      seed: 11
+    imu:
+      enabled: true
+      # Vibration is modelled as extra WHITE noise on the accelerometer and gyro (gz has no narrowband
+      # vibration model); bias = constant per-run offset (sigma) plus a slow random walk.
+      gyro_noise_stddev: 0.003
+      gyro_bias_stddev: 0.002
+      gyro_dynamic_bias_stddev: 0.0001
+      accel_noise_stddev: 0.05
+      accel_bias_stddev: 0.05
+      accel_dynamic_bias_stddev: 0.002
+      dynamic_bias_correlation_time_s: 300.0
+    lidar_dropout:
+      enabled: true
+      beam_dropout_prob: 0.01
+      scan_dropout_prob: 0.005
+      seed: 21
+
+  degraded:
+    description: Stronger draught with gusts, poor IMU (high vibration, large bias), frequent LiDAR dropouts.
+    wind:
+      enabled: true
+      mean_velocity: [2.0, 0.5, 0.0]
+      drag_per_s: 0.15
+      gust_amplitude_percent: 0.8
+      gust_period_s: 6.0
+      magnitude_noise_stddev: 0.15
+      direction_amplitude_deg: 40.0
+      direction_period_s: 15.0
+      direction_noise_stddev: 0.05
+      vertical_noise_stddev: 0.1
+      seed: 12
+    imu:
+      enabled: true
+      gyro_noise_stddev: 0.01
+      gyro_bias_stddev: 0.01
+      gyro_dynamic_bias_stddev: 0.0005
+      accel_noise_stddev: 0.25
+      accel_bias_stddev: 0.2
+      accel_dynamic_bias_stddev: 0.01
+      dynamic_bias_correlation_time_s: 300.0
+    lidar_dropout:
+      enabled: true
+      beam_dropout_prob: 0.05
+      scan_dropout_prob: 0.03
+      seed: 22
