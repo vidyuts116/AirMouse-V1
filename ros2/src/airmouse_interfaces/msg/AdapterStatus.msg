@@ -1,0 +1,6 @@
+builtin_interfaces/Time stamp
+bool adapter_running
+bool vehicle_state_available
+bool health_available
+bool command_interface_available
+builtin_interfaces/Time last_publish_time

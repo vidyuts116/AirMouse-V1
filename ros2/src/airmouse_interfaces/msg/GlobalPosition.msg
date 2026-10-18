@@ -1,0 +1,8 @@
+builtin_interfaces/Time stamp
+float64 latitude_deg
+float64 longitude_deg
+float64 altitude_m
+float64 relative_altitude_m
+float64 velocity_north_mps
+float64 velocity_east_mps
+float64 velocity_down_mps

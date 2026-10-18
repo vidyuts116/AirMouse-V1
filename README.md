@@ -1,14 +1,33 @@
-# AirMouse V1 — Gazebo simulation layer
+# AirMouse-V1
+drone project for sode 116
+
+AirMouse V1 is a modular, simulation-first, GPS-denied autonomous multirotor UAV for NIDAR.
+
+- **AI assistants: read [`AI_CONTEXT.md`](AI_CONTEXT.md) first.**
+- Project status: [`docs/PROJECT_STATE.md`](docs/PROJECT_STATE.md). Owners per subsystem: `AI_CONTEXT.md` → Team Ownership.
+
+| Folder | Contents |
+|---|---|
+| `flight_control/` | MAVLink flight-control core (see `flight_control/mavlink/README.md`) |
+| `ros2/`, `interfaces/ros2/` | ROS 2 messages, services, interface adapter and its contract |
+| `simulation/`, `tools/`, `scripts/`, `config/`, `src/airmouse_sitl_bridge/`, `logs/`, `backups/` | Gazebo simulation layer (section below) |
+| `docs/` | Team docs (architecture, decisions, members, testing) and the simulation docs |
+
+---
+
+The section below is the simulation layer's README. "Repository root" in it means this root.
+
+## Simulation layer (Gazebo, Arif)
 
 > **Private — not for public disclosure (possible IP).**
 
-## 1. What this is
+### 1. What this is
 
 This is the **Gazebo simulation layer of AirMouse V1** (Arif's layer), part of the team AirMouse project. AirMouse V1 is a **GPS-denied indoor UAV** being developed for **NIDAR**. This repository is its simulation and **research platform**: a verified quadrotor physics baseline, virtual sensors, test worlds (including a NIDAR-style maze), and an ArduPilot SITL bridge with regression and verification tooling.
 
 Everything stated below is **VERIFIED** by a test or a source-code check recorded in `docs/`, unless it is marked **PROVISIONAL**, **KNOWN ISSUE** or **NOT VERIFIED**. Evidence labels used in the docs are OBSERVED, SOURCE-CODE VERIFIED, ANALYTICAL and INFERRED.
 
-## 2. Status
+### 2. Status
 
 | Area | Status | Evidence |
 |---|---|---|
@@ -32,7 +51,7 @@ Everything stated below is **VERIFIED** by a test or a source-code check recorde
 
 **Regression:** `tools/airmouse_regression.py` runs Stages 0–10 (environment, SDF, boot, command path, joint speeds, force/torque, vertical acceleration, hover acceptance, differential thrust, repeatability, sensors). Latest result: **PASS**, logged in `logs/regression-2026-10-04/`. History is in [docs/research_log.md](docs/research_log.md).
 
-## 3. Requirements
+### 3. Requirements
 
 - **macOS on Apple Silicon.** Verified on Apple M3 with macOS 26.3, running native Gazebo (no VM or container).
 - **Gazebo Harmonic, `gz sim` 8.15.0, via Homebrew.** The server runs headless (`gz sim -s`) and renders sensors with Ogre2 on Metal. Development packages used by the C++ tools: gz-transport13, gz-msgs10, gz-sim8, gz-plugin2, gz-cmake3, rapidjson, and `cmake`.
@@ -60,7 +79,7 @@ Everything stated below is **VERIFIED** by a test or a source-code check recorde
   - `setuptools<81` provides `pkg_resources` for dronecan. Without it, the SITL build hangs.
   - `gnureadline` is required by MAVProxy on macOS.
 
-## 4. Quick start
+### 4. Quick start
 
 Run from the repository root. Always use loopback Gazebo Transport, and stop any running `gz sim` first.
 
@@ -121,7 +140,7 @@ python3 tools/sitl_flight_test.py simulation/sitl/empty_sitl.sdf --stub --mode l
   --ready-msg "EKF3 IMU0 is using external nav data"
 ```
 
-## 5. Repository layout
+### 5. Repository layout
 
 | Path | Contents |
 |---|---|
@@ -139,7 +158,7 @@ python3 tools/sitl_flight_test.py simulation/sitl/empty_sitl.sdf --stub --mode l
 | `logs/` | Run logs, CSVs and summaries for every test. Raw binary logs are kept outside Git (§8). |
 | `backups/` | Byte-exact copies of each previous baseline SDF (`airmouse_quadrotor.sdf.<hash8>.pre-*`). |
 
-## 6. Key interfaces
+### 6. Key interfaces
 
 **Gazebo sensors in the baseline.** World frame ENU; body `base_link` FLU (x forward, y left, z up).
 
@@ -177,7 +196,7 @@ python3 tools/sitl_flight_test.py simulation/sitl/empty_sitl.sdf --stub --mode l
 
 Decisions still open for Rohit are listed in `docs/phase3-sitl.md` §9.6 and §10.4.
 
-## 7. Known issues
+### 7. Known issues
 
 - **KNOWN ISSUE: depth camera.** A `depth_camera` sensor crashes `gz sim` (Ogre2 on Metal: `RGBA32Uint` pipeline exception) as soon as anything subscribes to it. The OpenGL backend crashes earlier. It has been removed from the baseline. The fallback is a multi-row `gpu_lidar`: a 64×16, 60°×30° diagnostic copy is verified against ray casts (`simulation/experimental/`, [proposal](docs/interfaces/depth_fallback_proposal.md)); the baseline is unchanged. See `docs/uav-physics-baseline.md`.
 - **SAFETY FINDING: ExternalNav-loss failsafe gap.**
@@ -189,13 +208,13 @@ Decisions still open for Rohit are listed in `docs/phase3-sitl.md` §9.6 and §1
   - The rangefinder reports OutOfRangeHigh on the ground, because the plugin maps "no return" to 2 × max. Options are in `docs/phase3-sitl.md` §10.2.
   - The NIDAR maze dimensions follow the team's request; the official rules are **NOT VERIFIED**.
 
-## 8. Raw data
+### 8. Raw data
 
 Raw binary logs (ArduPilot dataflash `*.BIN`, MAVProxy `*.tlog`, and one macOS crash report `*.ips`) are **kept outside Git**. They were removed from all history and are ignored by `.gitignore`.
 
 [logs/RAW_LOG_MANIFEST.md](logs/RAW_LOG_MANIFEST.md) lists every removed file's path, size and SHA-256, and the archive location: `~/AirMouse_raw_logs/airmouse_raw_logs_2026-10-03_04.zip` on Arif's machine, with its SHA-256 also recorded. The analyses of those logs are recorded in `docs/`.
 
-## 9. Team and ownership
+### 9. Team and ownership
 
 | Member | Role |
 |---|---|

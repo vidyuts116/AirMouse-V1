@@ -1,0 +1,7 @@
+builtin_interfaces/Time stamp
+float64 north_m
+float64 east_m
+float64 down_m
+float64 velocity_north_mps
+float64 velocity_east_mps
+float64 velocity_down_mps
