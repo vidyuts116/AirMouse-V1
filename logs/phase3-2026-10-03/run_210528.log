@@ -1,0 +1,16 @@
+AirMouse SITL flight test 2026-10-03T21:05:28: simulation/sitl/empty_sitl.sdf, takeoff 1.5 m, hover 30.0 s; params PROVISIONAL (not flight-approved)
+  EKF3 using GPS
+  [PASS] GUIDED + arm: measured ARMED | expected ARMED (OBSERVED)
+  [PASS] takeoff to 1.5 m (truth z >= target - 0.1 m): measured reached z 1.556 m at t=52.61 | expected z_home 0.040 + 1.5 = 1.540 m (OBSERVED)
+  [PASS] stable hover (|tilt| <= 30 deg, |z err| <= 1 m): measured stable | expected stable (OBSERVED)
+  [PASS] LAND -> auto-disarm: measured DISARMED | expected DISARMED (OBSERVED)
+  [INFO] window 5.0-35.2 s after reaching target (n=1774, pose dt 17 ms):  (OBSERVED)
+  [INFO] altitude hold error (truth z - target): mean -0.9 cm, std 0.0 cm, max |err| 1.0 cm; overshoot after reaching +7.9 cm (OBSERVED)
+  [INFO] attitude (truth): roll std 0.01 deg (peak 0.04), pitch std 0.01 deg (peak 0.03); roll p-p 0.07 deg; dominant roll freq 0.43 Hz; yaw drift 0.02 deg (OBSERVED)
+  [INFO] horizontal position hold (truth): max drift 0.2 cm from window start (OBSERVED)
+  [INFO] learned MOT_THST_HOVER (after disarm, MOT_HOVER_LEARN 2): 0.5400 vs analytical 0.5379 (spin 0/1), 0.5319 (spin 0.15/0.95 (defaults)); initial 0.54 (OBSERVED vs ANALYTICAL)
+  [INFO] mean CPU (100 % = one core) / peak RSS: gz_sim CPU 35 % / RSS 187 MB; arducopter CPU 7 % / RSS 5 MB; mavproxy CPU 6 % / RSS 92 MB (OBSERVED)
+  [INFO] real-time factor (Gazebo sim time / wall time): 1.000 over 95 s (OBSERVED)
+
+Cleanup: gz sim processes left = 0; run files in logs/phase3-2026-10-03/flight_empty_sitl_210528
+OVERALL: PASS

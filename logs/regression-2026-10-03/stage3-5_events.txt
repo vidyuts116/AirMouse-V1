@@ -1,0 +1,5 @@
+READY
+STATUS connected=1
+CMD speeds=586.800000,586.800000,586.800000,586.800000 cmd_sim=5.950000 connected=1
+FIRST_NONZERO sim=5.955000 cmd_sim=5.950000 sim_delay=0.005000 wall_delay=0.003513
+CMD speeds=0.000000,0.000000,0.000000,0.000000 cmd_sim=8.280000 connected=1

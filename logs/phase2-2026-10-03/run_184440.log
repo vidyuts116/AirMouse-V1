@@ -1,0 +1,10 @@
+
+Stage 6  World nidar_maze
+  [PASS] generated from current baseline: measured 21626e644770873e… | expected 21626e644770873e… (OBSERVED)
+  [PASS] gz sdf -k: measured Valid. | expected Valid. (OBSERVED)
+  [PASS] maze collisions = wall boxes: measured 40 | expected 40 (OBSERVED)
+  [PASS] launch pad + survivor markers non-colliding (visual only): measured 7 models, colliding: none | expected none colliding (OBSERVED)
+  [INFO] launch pad: 0.61 x 0.61 m at (-6.725 -6.725 0.0025 0 0 0); spawn (-6.725, -6.725) (OBSERVED)
+  [PASS] LiDAR rate (sim time): measured 10.08 Hz over 6.15 s | expected 10 Hz ±10 % (OBSERVED)
+
+Cleanup: gz sim processes left = 0; GZ_IP=127.0.0.1

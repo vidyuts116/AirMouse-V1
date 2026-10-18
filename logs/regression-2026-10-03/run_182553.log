@@ -1,0 +1,45 @@
+AirMouse regression 2026-10-03T18:25:53  root=/Users/arif_svii/Drone  GZ_IP=127.0.0.1
+
+Stage 0  Environment
+  [PASS] no gz sim process running before the test: measured 0 running | expected 0 (OBSERVED)
+  [PASS] gz sim version: measured 8.15.0 | expected 8.15.0 (OBSERVED)
+  [PASS] baseline SHA-256: measured 21626e644770873ed59aa6dce6b5ce2f47b11b7ab9e45b5fa1e4f764d3fea88f | expected 21626e644770873ed59aa6dce6b5ce2f47b11b7ab9e45b5fa1e4f764d3fea88f (OBSERVED)
+  [PASS] required tools present: measured all present | expected airmouse_hover_helper.cc, airmouse_sensor_probe.cc, airmouse_hover_acceptance.py, airmouse_differential_thrust.py, measure_airmouse_diagnostic.py (OBSERVED)
+  [PASS] jointfix diagnostic SDF present: measured True | expected True (OBSERVED)
+  [PASS] airmouse_hover_helper builds (Apple Clang, gz-transport13/gz-msgs10): measured built | expected built (OBSERVED)
+  [PASS] airmouse_sensor_probe builds: measured built | expected built (OBSERVED)
+  [PASS] airmouse_hover_acceptance.py compiles: measured ok | expected ok (OBSERVED)
+  [PASS] airmouse_differential_thrust.py compiles: measured ok | expected ok (OBSERVED)
+  [PASS] measure_airmouse_diagnostic.py compiles: measured ok | expected ok (OBSERVED)
+
+Stage 6  (session for Stages 6-9 on the baseline SDF)
+  session (baseline SDF): boot audit 0 pub / 4 sub; gate {'wall_s': 2.1951997079995635, 'publishers': 1, 'subscribers': 4, 'connected': 1}
+
+Stage 9  Repeatability: Stage 6 (586.8) x3 and Stage 7 x3
+  repeat 1: stage6 a_z +0.0018982; stage7 a_z +0.0018960, max|z-2| 0.0070179
+  repeat 2: stage6 a_z +0.0018982; stage7 a_z +0.0018960, max|z-2| 0.0070452
+  repeat 3: stage6 a_z +0.0018982; stage7 a_z +0.0018960, max|z-2| 0.0070451
+  [PASS] Stage 6 a_z @586.8 spread (max-min)/|mean|: measured 0.0020 % (0.0018982, 0.0018982, 0.0018982) | expected < 1 % (OBSERVED)
+  [PASS] Stage 7 a_z spread (max-min)/|mean|: measured 0.0000 % (0.0018960, 0.0018960, 0.0018960) | expected < 1 % (OBSERVED)
+  [PASS] Stage 7 max |z-2| spread (max-min)/|mean|: measured 0.3889 % (0.0070179, 0.0070452, 0.0070451) | expected < 1 % (OBSERVED)
+
+Service retries during run: 0
+
+Cleanup: gz sim processes left = 0; baseline SHA-256 after = 21626e644770873ed59aa6dce6b5ce2f47b11b7ab9e45b5fa1e4f764d3fea88f
+
+SUMMARY
+| Stage | Name | Result | Checks passed |
+|---|---|---|---|
+| 0 | Environment | PASS | 10/10 |
+| 1 | SDF validity and parsed parameters | NOT RUN | 0/0 |
+| 2 | Server boot | NOT RUN | 0/0 |
+| 3 | Command path | NOT RUN | 0/0 |
+| 4 | Joint speeds at 586.8 | NOT RUN | 0/0 |
+| 5 | Force/torque sensors | NOT RUN | 0/0 |
+| 6 | Vertical acceleration | NOT RUN | 0/0 |
+| 7 | Hover acceptance | NOT RUN | 0/0 |
+| 8 | Differential thrust | NOT RUN | 0/0 |
+| 9 | Repeatability | PASS | 3/3 |
+| 10 | Virtual sensors | NOT RUN | 0/0 |
+
+OVERALL: PASS

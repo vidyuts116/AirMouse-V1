@@ -1,0 +1,7 @@
+Connect tcp:127.0.0.1:5760 source_system=255
+Log Directory: /Users/arif_svii/Drone/logs/phase3-2026-10-03/motortest_192702/
+Telemetry log: /Users/arif_svii/Drone/logs/phase3-2026-10-03/motortest_192702/mav.tlog
+Waiting for heartbeat from tcp:127.0.0.1:5760
+link 1 down
+FTP: request timed out: OP seq:0 sess:92 opcode:4 req_opcode:0 size:31 bc:0 ofs:0 plen=31 [64]
+Failed to download /SRTM3/filelist_python : 'utf-8' codec can't decode byte 0x80 in position 0: invalid start byte

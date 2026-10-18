@@ -1,0 +1,18 @@
+AirMouse SITL flight test 2026-10-18T13:46:22: simulation/sitl/empty_sitl.sdf, takeoff 1.5 m, hover 30.0 s; params PROVISIONAL (not flight-approved)
+  EKF ready: 'EKF3 IMU0 is using GPS'
+  [PASS] GUIDED + arm: measured ARMED | expected ARMED (OBSERVED)
+  [PASS] takeoff to 1.5 m (truth z >= target - 0.1 m): measured reached z 1.567 m at t=52.33 | expected z_home 0.040 + 1.5 = 1.540 m (OBSERVED)
+  [PASS] switch to LOITER (RC 1-4 = 1500): measured LOITER | expected LOITER (OBSERVED)
+  [PASS] stable hover (|tilt| <= 30 deg, |z err| <= 1 m): measured stable | expected stable (OBSERVED)
+  [PASS] LAND -> auto-disarm: measured DISARMED | expected DISARMED (OBSERVED)
+  [INFO] window 5.0-35.1 s after reaching target (n=1769, pose dt 17 ms):  (OBSERVED)
+  [INFO] altitude hold error (truth z - target): mean -1.0 cm, std 0.1 cm, max |err| 1.2 cm; overshoot after reaching +7.8 cm (OBSERVED)
+  [INFO] attitude (truth): roll std 0.01 deg (peak 0.05), pitch std 0.04 deg (peak 0.25); roll p-p 0.10 deg; dominant roll freq 0.40 Hz; yaw drift 0.05 deg (OBSERVED)
+  [INFO] horizontal position hold (truth): max drift 0.6 cm from window start (OBSERVED)
+  [INFO] learned MOT_THST_HOVER (after disarm, MOT_HOVER_LEARN 2): 0.4917 vs analytical 0.5379 (spin 0/1), 0.5319 (spin 0.15/0.95 (defaults)); initial 0.54 (OBSERVED vs ANALYTICAL)
+  [INFO] dataflash CTUN hover throttle: ThH 0.5400 -> 0.4917 over 37 s airborne; ThO mean (last 20 s airborne) 0.4859 (OBSERVED)
+  [INFO] mean CPU (100 % = one core) / peak RSS: gz_sim CPU 58 % / RSS 192 MB; arducopter CPU 11 % / RSS 5 MB; mavproxy CPU 8 % / RSS 93 MB (OBSERVED)
+  [INFO] real-time factor (Gazebo sim time / wall time): 0.998 over 94 s (OBSERVED)
+
+Cleanup: gz sim processes left = 0; run files in logs/phase3-2026-10-18/flight_empty_sitl_134622
+OVERALL: PASS

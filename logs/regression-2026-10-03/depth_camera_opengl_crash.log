@@ -1,0 +1,22 @@
+UNSUPPORTED (log once): gldCopyBufferSubData: NEEDS IMPLEMENTATION
+Stack trace (most recent call last) in thread 6139965440:
+#19   Object "libsystem_pthread.dylib", at 0x1968c7c07, in _pthread_start + 135
+#18   Object "libgz-sim8-sensors-system.8.15.0.dy", at 0x134f72d57, in void* std::__1::__thread_proxy[abi:ne190102]<std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct>>, void (gz::sim::v8::systems::SensorsPrivate::*)(), gz::sim::v8::systems::SensorsPrivate*>>(void*) + 71
+#17   Object "libgz-sim8-sensors-system.8.15.0.dy", at 0x134f5deb7, in gz::sim::v8::systems::SensorsPrivate::RenderThread() + 207
+#16   Object "libgz-sim8-sensors-system.8.15.0.dy", at 0x134f5d73f, in gz::sim::v8::systems::SensorsPrivate::RunOnce() + 359
+#15   Object "libgz-sim8-rendering.8.15.0.dylib", at 0x1352462c7, in gz::sim::v8::RenderUtil::Update() + 2231
+#14   Object "libgz-sim8-rendering.8.15.0.dylib", at 0x135296577, in gz::sim::v8::SceneManager::CreateVisual(unsigned long long, sdf::v14::Visual const&, unsigned long long) + 1147
+#13   Object "libgz-sim8-rendering.8.15.0.dylib", at 0x13529715b, in gz::sim::v8::SceneManager::LoadGeometry(sdf::v14::Geometry const&, gz::math::v7::Vector3<double>&, gz::math::v7::Pose3<double>&) + 155
+#12   Object "libgz-rendering8.8.2.3.dylib", at 0x122519fa7, in gz::rendering::v8::BaseScene::CreateBox() + 131
+#11   Object "libgz-rendering8-ogre2.8.2.3.dylib", at 0x138d775bf, in gz::rendering::v8::Ogre2Scene::CreateBoxImpl(unsigned int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&) + 83
+#10   Object "libgz-rendering8-ogre2.8.2.3.dylib", at 0x138d7793f, in gz::rendering::v8::Ogre2Scene::CreateMeshImpl(unsigned int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&) + 79
+#9    Object "libgz-rendering8-ogre2.8.2.3.dylib", at 0x138d779cb, in gz::rendering::v8::Ogre2Scene::CreateMeshImpl(unsigned int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, gz::rendering::v8::MeshDescriptor const&) + 67
+#8    Object "libgz-rendering8-ogre2.8.2.3.dylib", at 0x138d51d37, in gz::rendering::v8::Ogre2MeshFactory::Create(gz::rendering::v8::MeshDescriptor const&) + 207
+#7    Object "libgz-rendering8-ogre2.8.2.3.dylib", at 0x138d522d3, in gz::rendering::v8::Ogre2MeshFactory::OgreItem(gz::rendering::v8::MeshDescriptor const&) + 39
+#6    Object "libgz-rendering8-ogre2.8.2.3.dylib", at 0x138d531ef, in gz::rendering::v8::Ogre2MeshFactory::LoadImpl(gz::rendering::v8::MeshDescriptor const&) + 3139
+#5    Object "RenderSystem_GL3Plus.2.3.1.dylib", at 0x1388590ef, in Ogre::v1::GL3PlusHardwareBufferManagerBase::createVertexBuffer(unsigned long, unsigned long, Ogre::v1::HardwareBuffer::Usage, bool) + 87
+#4    Object "RenderSystem_GL3Plus.2.3.1.dylib", at 0x13885b953, in Ogre::v1::GL3PlusHardwareVertexBuffer::GL3PlusHardwareVertexBuffer(Ogre::v1::HardwareBufferManagerBase*, unsigned long, unsigned long, Ogre::v1::HardwareBuffer::Usage, bool) + 95
+#3    Object "libsystem_platform.dylib", at 0x1968d1763, in _sigtramp + 55
+#2    Object "libgz-tools2-backward.2.0.4.dylib", at 0x102e21643, in backward::SignalHandling::sig_handler(int, __siginfo*, void*) + 19
+#1    Object "libgz-tools2-backward.2.0.4.dylib", at 0x102e216a7, in backward::SignalHandling::handleSignal(int, __siginfo*, void*) + 71
+#0    Object "libgz-tools2-backward.2.0.4.dylib", at 0x102e217e7, in backward::StackTraceImpl<backward::system_tag::darwin_tag>::load_from(void*, unsigned long, void*, void*) + 43

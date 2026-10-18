@@ -1,0 +1,10 @@
+Setting SIM_SPEEDUP=1.000000
+Starting SITL: JSON
+Home: -35.363261 149.165230 alt=584.000000m hdg=0.000000
+JSON control interface set to 127.0.0.1:9002
+Starting sketch 'ArduCopter'
+Starting SITL input
+Using Irlock at port : 9005
+bind port 5760 for SERIAL0
+SERIAL0 on TCP port 5760
+Waiting for connection ....

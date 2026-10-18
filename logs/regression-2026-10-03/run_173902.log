@@ -1,0 +1,145 @@
+AirMouse regression 2026-10-03T17:39:02  root=/Users/arif_svii/Drone
+
+Stage 0  Environment
+  [PASS] no gz sim process running before the test: measured 0 running | expected 0 (OBSERVED)
+  [PASS] gz sim version: measured 8.15.0 | expected 8.15.0 (OBSERVED)
+  [PASS] baseline SHA-256: measured 92baa42b6fb1d1a45f4e702c292dbf46c2a473909f4b909659690007eedabc02 | expected 92baa42b6fb1d1a45f4e702c292dbf46c2a473909f4b909659690007eedabc02 (OBSERVED)
+  [PASS] required tools present: measured all present | expected airmouse_hover_helper.cc, airmouse_hover_acceptance.py, airmouse_differential_thrust.py, measure_airmouse_diagnostic.py (OBSERVED)
+  [PASS] jointfix diagnostic SDF present: measured True | expected True (OBSERVED)
+  [PASS] airmouse_hover_helper builds (Apple Clang, gz-transport13/gz-msgs10): measured built | expected built (OBSERVED)
+  [PASS] airmouse_hover_acceptance.py compiles: measured ok | expected ok (OBSERVED)
+  [PASS] airmouse_differential_thrust.py compiles: measured ok | expected ok (OBSERVED)
+  [PASS] measure_airmouse_diagnostic.py compiles: measured ok | expected ok (OBSERVED)
+
+Stage 1  SDF validity and parsed parameters
+  [PASS] gz sdf -k simulation/airmouse_quadrotor.sdf: measured Valid. | expected Valid. (OBSERVED)
+  [PASS] gz sdf -k simulation/diagnostics/airmouse_force_diagnostic.sdf: measured Valid. | expected Valid. (OBSERVED)
+  [PASS] gz sdf -k simulation/diagnostics/airmouse_force_diagnostic_jointfix.sdf: measured Valid. | expected Valid. (OBSERVED)
+  [PASS] gz sdf -k simulation/diagnostics/airmouse_joint_velocity.sdf: measured Valid. | expected Valid. (OBSERVED)
+  [PASS] simulation/airmouse_quadrotor.sdf: total mass: measured 1.200000 kg | expected 1.200 kg (OBSERVED)
+  [PASS] simulation/airmouse_quadrotor.sdf: rotor joint poses: measured {'rotor_0_joint': [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], 'rotor_1_joint': [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], 'rotor_2_joint': [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], 'rotor_3_joint': [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]} | expected 0 0 0 0 0 0 each (OBSERVED)
+  [PASS] simulation/airmouse_quadrotor.sdf: rotor link positions: measured {'rotor_0': [0.282843, 0.282843], 'rotor_1': [-0.282843, 0.282843], 'rotor_2': [-0.282843, -0.282843], 'rotor_3': [0.282843, -0.282843]} | expected (±0.282843, ±0.282843): +,+ / -,+ / -,- / +,- (OBSERVED)
+  [PASS] simulation/airmouse_quadrotor.sdf: rotorVelocitySlowdownSim: measured [1.0, 1.0, 1.0, 1.0] | expected [1,1,1,1] (OBSERVED)
+  [PASS] simulation/airmouse_quadrotor.sdf: motorConstant: measured [8.54858e-06, 8.54858e-06, 8.54858e-06, 8.54858e-06] | expected 8.54858e-06 x4 (OBSERVED)
+  [PASS] simulation/airmouse_quadrotor.sdf: turning directions (actuator 0..3): measured ['ccw', 'cw', 'ccw', 'cw'] | expected ccw/cw/ccw/cw (OBSERVED)
+  [PASS] simulation/airmouse_quadrotor.sdf: actuator->joint mapping: measured ['rotor_0_joint', 'rotor_1_joint', 'rotor_2_joint', 'rotor_3_joint'] | expected ['rotor_0_joint', 'rotor_1_joint', 'rotor_2_joint', 'rotor_3_joint'] (OBSERVED)
+  [PASS] simulation/diagnostics/airmouse_force_diagnostic_jointfix.sdf: total mass: measured 1.200000 kg | expected 1.200 kg (OBSERVED)
+  [PASS] simulation/diagnostics/airmouse_force_diagnostic_jointfix.sdf: rotor joint poses: measured {'rotor_0_joint': [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], 'rotor_1_joint': [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], 'rotor_2_joint': [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], 'rotor_3_joint': [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]} | expected 0 0 0 0 0 0 each (OBSERVED)
+  [PASS] simulation/diagnostics/airmouse_force_diagnostic_jointfix.sdf: rotor link positions: measured {'rotor_0': [0.282843, 0.282843], 'rotor_1': [-0.282843, 0.282843], 'rotor_2': [-0.282843, -0.282843], 'rotor_3': [0.282843, -0.282843]} | expected (±0.282843, ±0.282843): +,+ / -,+ / -,- / +,- (OBSERVED)
+  [PASS] simulation/diagnostics/airmouse_force_diagnostic_jointfix.sdf: rotorVelocitySlowdownSim: measured [1.0, 1.0, 1.0, 1.0] | expected [1,1,1,1] (OBSERVED)
+  [PASS] simulation/diagnostics/airmouse_force_diagnostic_jointfix.sdf: motorConstant: measured [8.54858e-06, 8.54858e-06, 8.54858e-06, 8.54858e-06] | expected 8.54858e-06 x4 (OBSERVED)
+  [PASS] simulation/diagnostics/airmouse_force_diagnostic_jointfix.sdf: turning directions (actuator 0..3): measured ['ccw', 'cw', 'ccw', 'cw'] | expected ccw/cw/ccw/cw (OBSERVED)
+  [PASS] simulation/diagnostics/airmouse_force_diagnostic_jointfix.sdf: actuator->joint mapping: measured ['rotor_0_joint', 'rotor_1_joint', 'rotor_2_joint', 'rotor_3_joint'] | expected ['rotor_0_joint', 'rotor_1_joint', 'rotor_2_joint', 'rotor_3_joint'] (OBSERVED)
+  [INFO] simulation/diagnostics/airmouse_force_diagnostic.sdf geometry: LEGACY pre-fix joint poses (diagnostic history only, not used by later stages) (OBSERVED)
+  [INFO] simulation/diagnostics/airmouse_joint_velocity.sdf geometry: LEGACY pre-fix joint poses (diagnostic history only, not used by later stages) (OBSERVED)
+
+Stage 2  Server boot
+  [PASS] world loads (airmouse pose published): measured pose received | expected pose received (OBSERVED)
+  [PASS] motor topic subscribers: measured 4 | expected 4 (OBSERVED)
+  [PASS] motor topic publishers (nothing else publishing): measured 0 | expected 0 (OBSERVED)
+
+Stage 3  (data collection for Stages 3-5: one session on the jointfix diagnostic SDF)
+  session: gate {'wall_s': 2.206134916999872, 'publishers': 1, 'subscribers': 4, 'connected': 1}
+
+Stage 3  Command path
+  [PASS] helper connection gate (gz topic -i pub=1 sub=4, HasConnections=1): measured passed after 2.21 s wall | expected pass (OBSERVED)
+  [PASS] command -> first joint motion latency (sim): measured 5.0 ms sim (3.1 ms wall) | expected <= 20 ms sim (OBSERVED)
+  [INFO] latency resolution: 200 Hz joint-state sampling -> 5 ms quantisation (INFERRED)
+
+Stage 4  Joint speeds at 586.8 rad/s
+  [PASS] rotor_0 steady speed: measured +586.8000 rad/s | expected +586.8 (±0.1 %) (OBSERVED)
+  [PASS] rotor_0 t95 from command: measured 40.0 ms | expected 37.4 ± 10 ms (ANALYTICAL tau*ln20) (OBSERVED)
+  [PASS] rotor_1 steady speed: measured -586.8000 rad/s | expected -586.8 (±0.1 %) (OBSERVED)
+  [PASS] rotor_1 t95 from command: measured 40.0 ms | expected 37.4 ± 10 ms (ANALYTICAL tau*ln20) (OBSERVED)
+  [PASS] rotor_2 steady speed: measured +586.8000 rad/s | expected +586.8 (±0.1 %) (OBSERVED)
+  [PASS] rotor_2 t95 from command: measured 40.0 ms | expected 37.4 ± 10 ms (ANALYTICAL tau*ln20) (OBSERVED)
+  [PASS] rotor_3 steady speed: measured -586.8000 rad/s | expected -586.8 (±0.1 %) (OBSERVED)
+  [PASS] rotor_3 t95 from command: measured 40.0 ms | expected 37.4 ± 10 ms (ANALYTICAL tau*ln20) (OBSERVED)
+  [PASS] rotation signs: measured +,-,+,- | expected +,-,+,- (OBSERVED)
+
+Stage 5  Force/torque sensors (jointfix diagnostic SDF)
+  [PASS] ground, motors stopped rotor_0 Fz: measured -0.009808 N (n=50) | expected -0.00981 N ±1 % (OBSERVED)
+  [PASS] ground, motors stopped rotor_0 in-plane |F| and |T| peak: measured |Fxy|max=9.46e-19 N, |T|max=2.24e-20 N*m | expected < 1e-3 N, < 1e-4 N*m (OBSERVED)
+  [PASS] ground, motors stopped rotor_1 Fz: measured -0.009808 N (n=50) | expected -0.00981 N ±1 % (OBSERVED)
+  [PASS] ground, motors stopped rotor_1 in-plane |F| and |T| peak: measured |Fxy|max=7.76e-19 N, |T|max=2.24e-20 N*m | expected < 1e-3 N, < 1e-4 N*m (OBSERVED)
+  [PASS] ground, motors stopped rotor_2 Fz: measured -0.009808 N (n=50) | expected -0.00981 N ±1 % (OBSERVED)
+  [PASS] ground, motors stopped rotor_2 in-plane |F| and |T| peak: measured |Fxy|max=8.46e-19 N, |T|max=2.24e-20 N*m | expected < 1e-3 N, < 1e-4 N*m (OBSERVED)
+  [PASS] ground, motors stopped rotor_3 Fz: measured -0.009808 N (n=50) | expected -0.00981 N ±1 % (OBSERVED)
+  [PASS] ground, motors stopped rotor_3 in-plane |F| and |T| peak: measured |Fxy|max=9.46e-19 N, |T|max=2.24e-20 N*m | expected < 1e-3 N, < 1e-4 N*m (OBSERVED)
+  [PASS] ground, spun up rotor_0 Fz: measured +2.933757 N (n=101) | expected 2.93376 N ±1 % (ANALYTICAL k*w^2 - m_r*g) (OBSERVED)
+  [PASS] ground, spun up rotor_0 in-plane |F| and |T| peak: measured |Fxy|max=1.23e-32 N, |T|max=2.13e-24 N*m | expected < 1e-3 N, < 1e-4 N*m (OBSERVED)
+  [PASS] ground, spun up rotor_1 Fz: measured +2.933757 N (n=101) | expected 2.93376 N ±1 % (ANALYTICAL k*w^2 - m_r*g) (OBSERVED)
+  [PASS] ground, spun up rotor_1 in-plane |F| and |T| peak: measured |Fxy|max=9.24e-33 N, |T|max=2.13e-24 N*m | expected < 1e-3 N, < 1e-4 N*m (OBSERVED)
+  [PASS] ground, spun up rotor_2 Fz: measured +2.933757 N (n=101) | expected 2.93376 N ±1 % (ANALYTICAL k*w^2 - m_r*g) (OBSERVED)
+  [PASS] ground, spun up rotor_2 in-plane |F| and |T| peak: measured |Fxy|max=1.23e-32 N, |T|max=2.13e-24 N*m | expected < 1e-3 N, < 1e-4 N*m (OBSERVED)
+  [PASS] ground, spun up rotor_3 Fz: measured +2.933757 N (n=101) | expected 2.93376 N ±1 % (ANALYTICAL k*w^2 - m_r*g) (OBSERVED)
+  [PASS] ground, spun up rotor_3 in-plane |F| and |T| peak: measured |Fxy|max=1.08e-32 N, |T|max=2.13e-24 N*m | expected < 1e-3 N, < 1e-4 N*m (OBSERVED)
+  [PASS] airborne, spun up rotor_0 Fz: measured +2.933757 N (n=190) | expected 2.93376 N ±1 % (ANALYTICAL k*w^2 - m_r*g) (OBSERVED)
+  [PASS] airborne, spun up rotor_0 in-plane |F| and |T| peak: measured |Fxy|max=1.23e-32 N, |T|max=2.13e-24 N*m | expected < 1e-3 N, < 1e-4 N*m (OBSERVED)
+  [PASS] airborne, spun up rotor_1 Fz: measured +2.933757 N (n=190) | expected 2.93376 N ±1 % (ANALYTICAL k*w^2 - m_r*g) (OBSERVED)
+  [PASS] airborne, spun up rotor_1 in-plane |F| and |T| peak: measured |Fxy|max=1.23e-32 N, |T|max=2.13e-24 N*m | expected < 1e-3 N, < 1e-4 N*m (OBSERVED)
+  [PASS] airborne, spun up rotor_2 Fz: measured +2.933757 N (n=190) | expected 2.93376 N ±1 % (ANALYTICAL k*w^2 - m_r*g) (OBSERVED)
+  [PASS] airborne, spun up rotor_2 in-plane |F| and |T| peak: measured |Fxy|max=1.23e-32 N, |T|max=2.13e-24 N*m | expected < 1e-3 N, < 1e-4 N*m (OBSERVED)
+  [PASS] airborne, spun up rotor_3 Fz: measured +2.933757 N (n=190) | expected 2.93376 N ±1 % (ANALYTICAL k*w^2 - m_r*g) (OBSERVED)
+  [PASS] airborne, spun up rotor_3 in-plane |F| and |T| peak: measured |Fxy|max=1.23e-32 N, |T|max=2.13e-24 N*m | expected < 1e-3 N, < 1e-4 N*m (OBSERVED)
+
+Stage 6  (session for Stages 6-9 on the baseline SDF)
+  session (baseline SDF): boot audit 0 pub / 4 sub; gate {'wall_s': 2.207781375000195, 'publishers': 1, 'subscribers': 4, 'connected': 1}
+
+Stage 6  Vertical acceleration (airborne window only; spin-up 200 ms exact on ground)
+  [PASS] a_z at 500 rad/s: measured -2.68618 m/s^2 (v0 -0.0040 m/s, n=47, window 0.000-0.784 s) | expected -2.68618 ±0.05 (ANALYTICAL) (OBSERVED)
+  [PASS] a_z at 586.8 rad/s: measured +0.00190 m/s^2 (v0 +0.0001 m/s, n=48, window 0.000-0.800 s) | expected +0.00190 ±0.05 (ANALYTICAL) (OBSERVED)
+  [PASS] a_z at 700 rad/s: measured +4.15268 m/s^2 (v0 +0.6860 m/s, n=48, window 0.000-0.794 s) | expected +4.15268 ±0.05 (ANALYTICAL) (OBSERVED)
+
+Stage 7  Hover acceptance (spin-up 1000 ms exact on ground, reset z=2, record 2 s)
+  [PASS] |a_z - 0.0019|: measured a_z +0.00190 m/s^2 (|diff| 0.00000) | expected < 0.05 (OBSERVED)
+  [PASS] max |z - 2| over 2 s: measured 0.00705 m (v0 +0.00166 m/s, tilt 0.0000 deg, drift 0.000000 m, n=118) | expected < 0.02 m (OBSERVED)
+
+Stage 8  Differential thrust (delta = 5 rad/s), primary-axis angular acceleration
+  [PASS] roll pattern: roll alpha: measured +3.09546 rad/s^2 (ratio 0.9992; cross-axis +9.8e-21, -1.9e-19; n=16) | expected +3.09788 ±2 % (ANALYTICAL tau/I_rigid) (OBSERVED)
+  [PASS] pitch pattern: pitch alpha: measured -3.09547 rad/s^2 (ratio 0.9992; cross-axis -3.4e-07, +2.2e-06; n=16) | expected -3.09788 ±2 % (ANALYTICAL tau/I_rigid) (OBSERVED)
+  [PASS] yaw pattern: yaw alpha: measured -0.09831 rad/s^2 (ratio 0.9995; cross-axis -4.3e-08, -3.0e-10; n=16) | expected -0.09836 ±2 % (ANALYTICAL tau/I_rigid) (OBSERVED)
+
+Stage 9  Repeatability: Stage 6 (586.8) x3 and Stage 7 x3
+  repeat 1: stage6 a_z +0.0018982; stage7 a_z +0.0018960, max|z-2| 0.0070508
+  repeat 2: stage6 a_z +0.0018975; stage7 a_z +0.0018960, max|z-2| 0.0070506
+  repeat 3: stage6 a_z +0.0018977; stage7 a_z +0.0018960, max|z-2| 0.0070506
+  [PASS] Stage 6 a_z @586.8 spread (max-min)/|mean|: measured 0.0345 % (0.0018982, 0.0018975, 0.0018977) | expected < 1 % (OBSERVED)
+  [PASS] Stage 7 a_z spread (max-min)/|mean|: measured 0.0000 % (0.0018960, 0.0018960, 0.0018960) | expected < 1 % (OBSERVED)
+  [PASS] Stage 7 max |z-2| spread (max-min)/|mean|: measured 0.0040 % (0.0070508, 0.0070506, 0.0070506) | expected < 1 % (OBSERVED)
+
+Stage 10  Virtual sensors
+  [INFO] sensor in simulation/diagnostics/airmouse_force_diagnostic.sdf: rotor_0_force_torque type=force_torque update_rate=200 topic=/airmouse/diagnostic/force/rotor_0 (OBSERVED)
+  [INFO] sensor in simulation/diagnostics/airmouse_force_diagnostic.sdf: rotor_1_force_torque type=force_torque update_rate=200 topic=/airmouse/diagnostic/force/rotor_1 (OBSERVED)
+  [INFO] sensor in simulation/diagnostics/airmouse_force_diagnostic.sdf: rotor_2_force_torque type=force_torque update_rate=200 topic=/airmouse/diagnostic/force/rotor_2 (OBSERVED)
+  [INFO] sensor in simulation/diagnostics/airmouse_force_diagnostic.sdf: rotor_3_force_torque type=force_torque update_rate=200 topic=/airmouse/diagnostic/force/rotor_3 (OBSERVED)
+  [INFO] sensor in simulation/diagnostics/airmouse_force_diagnostic_jointfix.sdf: rotor_0_force_torque type=force_torque update_rate=200 topic=/airmouse/diagnostic/force/rotor_0 (OBSERVED)
+  [INFO] sensor in simulation/diagnostics/airmouse_force_diagnostic_jointfix.sdf: rotor_1_force_torque type=force_torque update_rate=200 topic=/airmouse/diagnostic/force/rotor_1 (OBSERVED)
+  [INFO] sensor in simulation/diagnostics/airmouse_force_diagnostic_jointfix.sdf: rotor_2_force_torque type=force_torque update_rate=200 topic=/airmouse/diagnostic/force/rotor_2 (OBSERVED)
+  [INFO] sensor in simulation/diagnostics/airmouse_force_diagnostic_jointfix.sdf: rotor_3_force_torque type=force_torque update_rate=200 topic=/airmouse/diagnostic/force/rotor_3 (OBSERVED)
+  [NOT PRESENT] IMU / LiDAR / camera / depth sensors: NOT PRESENT (OBSERVED)
+  [INFO] sensors in baseline SDF: 0 (OBSERVED)
+  [PASS] diagnostic joint_state rate (jointfix SDF, sim time): measured 200.0 Hz over 3.03 s | expected 200 Hz ±10 % (OBSERVED)
+  [PASS] diagnostic rotor_0_force_torque rate (jointfix SDF, sim time): measured 200.0 Hz over 3.03 s | expected 200 Hz ±10 % (OBSERVED)
+  [PASS] diagnostic rotor_1_force_torque rate (jointfix SDF, sim time): measured 200.0 Hz over 3.02 s | expected 200 Hz ±10 % (OBSERVED)
+  [PASS] diagnostic rotor_2_force_torque rate (jointfix SDF, sim time): measured 200.0 Hz over 3.01 s | expected 200 Hz ±10 % (OBSERVED)
+  [PASS] diagnostic rotor_3_force_torque rate (jointfix SDF, sim time): measured 200.0 Hz over 3.02 s | expected 200 Hz ±10 % (OBSERVED)
+
+Cleanup: gz sim processes left = 0; baseline SHA-256 after = 92baa42b6fb1d1a45f4e702c292dbf46c2a473909f4b909659690007eedabc02
+
+SUMMARY
+| Stage | Name | Result | Checks passed |
+|---|---|---|---|
+| 0 | Environment | PASS | 9/9 |
+| 1 | SDF validity and parsed parameters | PASS | 18/18 |
+| 2 | Server boot | PASS | 3/3 |
+| 3 | Command path | PASS | 2/2 |
+| 4 | Joint speeds at 586.8 | PASS | 9/9 |
+| 5 | Force/torque sensors | PASS | 24/24 |
+| 6 | Vertical acceleration | PASS | 3/3 |
+| 7 | Hover acceptance | PASS | 2/2 |
+| 8 | Differential thrust | PASS | 3/3 |
+| 9 | Repeatability | PASS | 3/3 |
+| 10 | Virtual sensors | NOT PRESENT (no IMU/LiDAR/camera/depth); other checks PASS | 5/5 |
+
+OVERALL: PASS

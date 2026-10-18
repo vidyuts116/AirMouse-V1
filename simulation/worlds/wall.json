@@ -1,0 +1,23 @@
+{
+ "world": "wall",
+ "baseline_sha256": "f1c1d0f7dfdce2407b314244d38c46becb12da1a095e1ec4fbbc7688da6ff46c",
+ "wall_height": 2.0,
+ "wall_thickness": 0.1,
+ "spawn": {
+  "x": 0.0,
+  "y": 0.0,
+  "z": 0.1,
+  "yaw": 0.0
+ },
+ "walls_cx_cy_lx_ly": [
+  [
+   3.05,
+   0.0,
+   0.1,
+   4.0
+  ]
+ ],
+ "params": {
+  "wall_face_x": 3.0
+ }
+}

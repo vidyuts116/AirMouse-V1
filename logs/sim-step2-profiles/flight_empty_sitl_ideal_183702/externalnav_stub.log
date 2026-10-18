@@ -1,0 +1,3 @@
+*** GROUND-TRUTH-DERIVED, PLUMBING TEST ONLY *** ExternalNav stub starting (seed 1); must be removed once Doshi's SLAM exists
+*** GROUND-TRUTH-DERIVED, PLUMBING TEST ONLY *** ExternalNav dropout STARTED at sim t=45.00
+*** GROUND-TRUTH-DERIVED, PLUMBING TEST ONLY *** stub stopped after 1217 ODOMETRY messages; dropout events [(7864.042068333, 45.002, True)]

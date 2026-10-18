@@ -1,0 +1,13 @@
+{
+ "profile": "ideal",
+ "description": "Baseline sensors, still air, no LiDAR dropout. Identical to the unprofiled SITL world.",
+ "wind": {
+  "enabled": false
+ },
+ "imu": {
+  "enabled": false
+ },
+ "lidar_dropout": {
+  "enabled": false
+ }
+}

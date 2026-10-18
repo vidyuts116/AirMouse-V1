@@ -1,0 +1,21 @@
+# =====================================================================================
+# PROVISIONAL – for Rohit's review, not flight-approved.
+# SIMULATION ONLY (ArduCopter 4.6.3 SITL + Gazebo AirMouse V1). Do not load on hardware.
+# =====================================================================================
+# Loaded after copter.parm and airmouse_sitl.parm. Everything not listed stays at the
+# ArduPilot 4.6.3 SITL default, including all ATC_* / PSC_* gains and the SITL GPS.
+# GPS-denied configuration is a later step with Rohit.
+#
+# Thrust curve: the Gazebo motor model is T = k*w^2 with w linear in PWM
+# (1000-2000 us -> 0-800 rad/s), so thrust is quadratic in the actuator: EXPO 1.0.
+MOT_THST_EXPO   1.0
+# Hover thrust estimate, refined in flight by hover learning (learn and save).
+# ANALYTICAL: w_hover/w_max = 586.743/800 = 0.7334.
+#   With MOT_SPIN_MIN/MAX = 0/1 the hover thrust is 0.7334^2 = 0.538.
+#   With the defaults 0.15/0.95 (AP_Motors_Thrust_Linearization.cpp:101-130) it is
+#   ((0.7334 - 0.15) / 0.80)^2 = 0.532.
+MOT_THST_HOVER  0.54
+MOT_HOVER_LEARN 2
+# 2026-10-04: LOITER hover learning (GPS on, SITL home 584 m AMSL, SITL battery 12.6 V) converged to
+# MOT_THST_HOVER = 0.488 (run logs/phase3-2026-10-04/flight_empty_sitl_005532). This value is recorded
+# here for Rohit; it is NOT applied. The 0.54 starting value above also flies stably.

@@ -1,0 +1,10 @@
+31,34c31,34
+<       <joint name="rotor_0_joint" type="revolute"><parent>base_link</parent><child>rotor_0</child><pose>0.282843 0.282843 0 0 0 0</pose><axis><xyz>0 0 1</xyz><limit><lower>-1e16</lower><upper>1e16</upper></limit></axis></joint>
+<       <joint name="rotor_1_joint" type="revolute"><parent>base_link</parent><child>rotor_1</child><pose>-0.282843 0.282843 0 0 0 0</pose><axis><xyz>0 0 1</xyz><limit><lower>-1e16</lower><upper>1e16</upper></limit></axis></joint>
+<       <joint name="rotor_2_joint" type="revolute"><parent>base_link</parent><child>rotor_2</child><pose>-0.282843 -0.282843 0 0 0 0</pose><axis><xyz>0 0 1</xyz><limit><lower>-1e16</lower><upper>1e16</upper></limit></axis></joint>
+<       <joint name="rotor_3_joint" type="revolute"><parent>base_link</parent><child>rotor_3</child><pose>0.282843 -0.282843 0 0 0 0</pose><axis><xyz>0 0 1</xyz><limit><lower>-1e16</lower><upper>1e16</upper></limit></axis></joint>
+---
+>       <joint name="rotor_0_joint" type="revolute"><parent>base_link</parent><child>rotor_0</child><pose>0 0 0 0 0 0</pose><axis><xyz>0 0 1</xyz><limit><lower>-1e16</lower><upper>1e16</upper></limit></axis></joint>
+>       <joint name="rotor_1_joint" type="revolute"><parent>base_link</parent><child>rotor_1</child><pose>0 0 0 0 0 0</pose><axis><xyz>0 0 1</xyz><limit><lower>-1e16</lower><upper>1e16</upper></limit></axis></joint>
+>       <joint name="rotor_2_joint" type="revolute"><parent>base_link</parent><child>rotor_2</child><pose>0 0 0 0 0 0</pose><axis><xyz>0 0 1</xyz><limit><lower>-1e16</lower><upper>1e16</upper></limit></axis></joint>
+>       <joint name="rotor_3_joint" type="revolute"><parent>base_link</parent><child>rotor_3</child><pose>0 0 0 0 0 0</pose><axis><xyz>0 0 1</xyz><limit><lower>-1e16</lower><upper>1e16</upper></limit></axis></joint>

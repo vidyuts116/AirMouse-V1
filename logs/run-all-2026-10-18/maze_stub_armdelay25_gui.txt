@@ -1,0 +1,24 @@
+AirMouse SITL flight test 2026-10-18T14:04:08: simulation/sitl/nidar_maze_sitl.sdf, takeoff 1.5 m, hover 30.0 s; params PROVISIONAL (not flight-approved)
+  *** ExternalNav stub started: GROUND-TRUTH-DERIVED, PLUMBING TEST ONLY ***
+  EKF ready: 'EKF3 IMU0 is using external nav data'
+  waiting 25 s before arming (--arm-delay)
+  [PASS] GUIDED + arm: measured ARMED | expected ARMED (OBSERVED)
+  [PASS] takeoff to 1.5 m (truth z >= target - 0.1 m): measured reached z 1.470 m at t=40.32 | expected z_home 0.040 + 1.5 = 1.540 m (OBSERVED)
+  [PASS] switch to LOITER (RC 1-4 = 1500): measured LOITER | expected LOITER (OBSERVED)
+  [PASS] stable hover (|tilt| <= 30 deg, |z err| <= 1 m): measured stable | expected stable (OBSERVED)
+  [PASS] LAND -> auto-disarm: measured DISARMED | expected DISARMED (OBSERVED)
+  [INFO] window 5.0-35.2 s after reaching target (n=1778, pose dt 17 ms):  (OBSERVED)
+  [INFO] altitude hold error (truth z - target): mean +0.8 cm, std 0.3 cm, max |err| 1.2 cm; overshoot after reaching +7.9 cm (OBSERVED)
+  [INFO] attitude (truth): roll std 0.03 deg (peak 0.17), pitch std 0.02 deg (peak 0.12); roll p-p 0.33 deg; dominant roll freq 0.56 Hz; yaw drift 0.03 deg (OBSERVED)
+  [INFO] horizontal position hold (truth): max drift 1.0 cm from window start (OBSERVED)
+  [INFO] learned MOT_THST_HOVER (after disarm, MOT_HOVER_LEARN 2): 0.4914 vs analytical 0.5379 (spin 0/1), 0.5319 (spin 0.15/0.95 (defaults)); initial 0.54 (OBSERVED vs ANALYTICAL)
+  [INFO] ArduPilot rangefinder (dataflash RFND; status 3 = OutOfRangeHigh, 4 = Good): hover Dist mean 1.500 m (std 3.2 cm, status [4]); before takeoff status [3] (OBSERVED)
+  [INFO] dataflash CTUN hover throttle: ThH 0.5400 -> 0.4914 over 37 s airborne; ThO mean (last 20 s airborne) 0.4859 (OBSERVED)
+  [PASS] VISP (ExternalNav pose) records received and consumed: measured 1607 records over 53.2 s, ignored 0, quality [100] | expected > 0, none ignored (OBSERVED)
+  [INFO] EKF-related messages:  (OBSERVED)
+  [INFO] EKF position vs ExternalNav input (last 5 s, vehicle at rest): EKF PN/PE/PD -0.043/+0.006/-0.058 m, yaw 0.13 deg; VISP PX/PY/PZ -0.045/+0.019/-0.020 m, yaw -0.04 deg (OBSERVED)
+  [INFO] mean CPU (100 % = one core) / peak RSS: gz_sim CPU 57 % / RSS 141 MB; arducopter CPU 9 % / RSS 5 MB; mavproxy CPU 8 % / RSS 93 MB (OBSERVED)
+  [INFO] real-time factor (Gazebo sim time / wall time): 0.997 over 84 s (OBSERVED)
+
+Cleanup: gz sim processes left = 0; run files in logs/phase3-2026-10-18/flight_nidar_maze_sitl_140408
+OVERALL: PASS

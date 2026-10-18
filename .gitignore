@@ -1,3 +1,4 @@
+# ---- Team rules (main) ----
 # Python generated files
 __pycache__/
 *.py[cod]
@@ -20,3 +21,43 @@ ros2/log/
 
 # Python packaging metadata
 *.egg-info/
+
+# ---- Simulation layer rules (simulation/physics-baseline) ----
+# Build outputs and caches
+build/
+install/
+__pycache__/
+*.pyc
+*.dylib
+.DS_Store
+
+# Homebrew bottle/download cache (~2 GB), not project source
+downloads/
+
+# Large logs: CSV files over 5 MB under logs/ are listed here individually
+# (git cannot ignore by size; check with: find logs -name '*.csv' -size +5M).
+# none at present
+
+# Phase 3 external sources and Python environment (pinned versions recorded in docs/phase3-sitl.md)
+src/ardupilot/
+src/ardupilot_gazebo/
+.venv-ardupilot/
+
+# Raw binary logs: kept outside Git (see logs/RAW_LOG_MANIFEST.md for paths, sizes, SHA-256 and archive location)
+*.BIN
+*.tlog
+*.ips
+# core.ignorecase=true on macOS makes *.BIN also match *.bin; keep ArduPilot SITL eeprom.bin snapshots trackable
+!eeprom.bin
+
+# Never commit SSH keys or credentials
+git_key
+git_key.pub
+id_rsa*
+id_ed25519*
+id_ecdsa*
+*.pem
+.env
+
+# Per-run logs written by scripts/launch_sim.sh
+logs/launch-*/

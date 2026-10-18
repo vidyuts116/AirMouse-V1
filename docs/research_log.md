@@ -1,0 +1,79 @@
+# AirMouse research log
+
+Chronological engineering log. Each entry carries evidence labels: OBSERVED, SOURCE-CODE VERIFIED, ANALYTICAL, INFERRED, NOT VERIFIED. Details live in the linked docs.
+
+## 2026-10-03
+
+- **Force path verified; fall explained.** The rotor-speed-to-force chain matches the analytical values to 4 significant figures. The 2 m fall came from the test harness: about 0.25 s of command latency, followed by an open-loop command at exactly hover. See `force-path-results-2026-10-03.md`.
+- **Joint-frame defect found and fixed.** Joint `<pose>` values were resolved relative to the child link, so the rotors orbited at 0.4 m. After the approved fix, the moment arms match analytical values within 0.08 %. Baseline `5a72f8ba` → `92baa42b`.
+- **Regression suite.** `tools/airmouse_regression.py` runs Stages 0–10 and stops at the first FAIL.
+- **Virtual sensors.**
+  - IMU (`652ef0c1`), 2D LiDAR (`1224906b`) and RGB camera (`21626e64`) all PASS.
+  - **KNOWN ISSUE:** the depth camera crashes Ogre2 on Metal as soon as anything subscribes to it, so it was reverted.
+  - See `uav-physics-baseline.md`.
+- **Phase 2 worlds.** 7 worlds plus 5 seeded NIDAR variants, all verified against LiDAR ray-casts. The NIDAR maze follows the requested spec; the official rules are NOT VERIFIED. See `phase2-worlds.md`.
+- **Phase 3 SITL.**
+  - ArduCopter 4.6.3 SITL ↔ Gazebo via `ArduPilotPlugin` and the `airmouse::ActuatorsBridge`.
+  - The BF_X_REV map was verified in source, and motortest PASSES on all four motors.
+  - Python 3.14 fixes: `setuptools<81` (for `pkg_resources`) and `gnureadline`.
+  - See `phase3-sitl.md`.
+- **First SITL takeoff (PROVISIONAL params): UNSTABLE.** The vehicle flipped in pitch, then SITL hit `SIGILL` in `EKFGSF_yaw::predict`. Root cause: the AirMouse IMU reports FLU, while `ArduPilotPlugin` passes IMU data raw and assumes FRD (SOURCE-CODE VERIFIED). Pitch and yaw rates and accel z reached ArduPilot inverted; at rest AccZ was +9.817 (OBSERVED). Proposed fix: rotate the IMU sensor by 180° roll in SITL worlds only. Not applied; the campaign stopped per instruction. Regression after the attempt: PASS.
+- **SITL IMU-frame fix (approved) and flights 2–3: STABLE.**
+  - **Fix:** the SITL worlds keep the FLU IMU on `/airmouse/imu` and add an FRD IMU (roll 180°, same noise) for ArduPilotPlugin.
+  - **Ground checks PASS:** at rest AccZ −9.815, and when held 10° nose-up ArduPilot reports pitch +10.00°. `/airmouse/imu` still reads az +9.818.
+  - **empty_sitl:** takeoff 1.5 m, hover 30 s, land. Altitude error max 1.0 cm, attitude std 0.01°, drift 0.2 cm, RTF 1.000.
+  - **NIDAR maze:** takeoff and hover. Altitude error max 1.2 cm, attitude std 0.02°, RTF 0.997.
+  - **Hover speed:** the hover PWM gives ω 586.68–586.70 rad/s, against the analytical 586.743.
+  - **Hover learning:** it did not run, because GUIDED's desired vertical velocity is never exactly zero (OBSERVED and SOURCE-CODE VERIFIED). ThO 0.4877 is consistent with 0.532 after ArduPilot's battery and air-density compensation (INFERRED).
+  - **Regression:** PASS. See `phase3-sitl.md` §9.
+- **Open decisions:**
+  - hover-learning procedure (ALT_HOLD/LOITER) or a fixed `MOT_THST_HOVER` ≈ 0.49; takeoff overshoot
+  - Rohit's review of the frame parameters and the provisional flight parameters
+  - the GPS-denied configuration
+  - the NIDAR spec interpretations (room size, footprint convention, marker shape)
+
+## 2026-10-04
+
+- **Hover learning in LOITER (GPS on):** `MOT_THST_HOVER` learned **0.488**, as predicted, which is the thrust-domain value after compensation. It is recorded for Rohit and not applied. The LOITER hover was stable: altitude error max 1.3 cm, drift 2.0 cm. See `phase3-sitl.md` §10.1.
+- **Downward rangefinder:**
+  - Added to the baseline as a 1-beam `gpu_lidar` (0.2–8 m, σ 2 cm, 50 Hz). New baseline `f1c1d0f7`; regression PASS.
+  - `ArduPilotPlugin` forwards it as JSON `rng_1` (SOURCE-CODE VERIFIED), and ArduPilot RFND reads 1.487 m in a 1.5 m hover, status Good.
+  - Limitation: on the ground it reports OutOfRangeHigh, because the plugin maps no return to 2 × max. Options are listed for Rohit.
+  - All 12 worlds regenerated and re-verified: PASS. See `phase3-sitl.md` §10.2.
+- **ExternalNav plumbing stub (GROUND-TRUTH-DERIVED, PLUMBING TEST ONLY; to be removed once Doshi's SLAM exists):**
+  - It sends MAVLink ODOMETRY (LOCAL_FRD/BODY_FRD) at 30 Hz from Gazebo truth plus noise and drift.
+  - With GPS disabled, both EKF3 cores report "is using external nav data". See `phase3-sitl.md` §10.3.
+- **GPS-denied flight (GPS disabled, ExternalNav from the PLUMBING-ONLY stub):**
+  - Takeoff, LOITER 30 s and land all PASS: altitude error max 1.2 cm, drift 0.7 cm. 2198 VISP samples consumed, 0 ignored.
+  - These are plumbing results only, not navigation performance.
+- **ExternalNav loss mid-hover:**
+  - "EKF3 stopped aiding" at +15 s. **No failsafe and no mode change** through +40 s, with the vehicle LOITERing on dead-reckoning. EKF test ratios fell to 0.
+  - **SAFETY FINDING:** a loss of the SLAM feed is not caught by default failsafes. Options (a)–(d) are listed for Rohit. See `phase3-sitl.md` §10.4.
+- **Interface contract drafted:** `docs/interfaces/odometry_to_ardupilot.md` specifies what Doshi's SLAM must send to ArduPilot:
+  - message: ODOMETRY id 331, `LOCAL_FRD` / `BODY_FRD` (other frames are silently dropped)
+  - quaternion body→local; velocity in body FRD
+  - covariance indices 0/6/11/15/18/20, clamped to the `VISO_*_M_NSE` floors; `velocity_covariance` unused
+  - `reset_counter` on jumps; quality −1 when lost
+  - 20–30 Hz, `VISO_DELAY_MS` set to the measured latency, `SET_GPS_GLOBAL_ORIGIN` at startup
+  - a failsafe contract pending Rohit
+  - every item cites the 4.6.3 source
+
+
+## 2026-10-18
+
+- **Full re-run on the unchanged baseline** (`f1c1d0f7`, Gazebo 8.15.0). Console copies in `logs/run-all-2026-10-18/`.
+  - **Regression Stages 0–10:** PASS, 104/104 checks (`logs/regression-2026-10-18/`). Physics values identical to 2026-10-04: a_z at 500/586.8/700 rad/s, rotor Fz 2.933757 N, roll/pitch/yaw α, hover max |z−2| 0.00705 m. The remaining differences are sampling quantisation (rotor t95 40 vs 45 ms) and sensor noise.
+  - **World LiDAR verification, 12 worlds:** PASS. 360/360 beams in the ray-cast band in every world, range bias ≤ 0.64 mm, noise 0.99–1.04 σ, survivor markers seen at 0.70 m.
+  - **SITL, GPS on (`empty_sitl`):** motortest PASS; IMU-frame ground checks PASS; LOITER 30 s PASS: altitude error max 1.2 cm, drift 0.6 cm, learned `MOT_THST_HOVER` 0.4917, RTF 0.998.
+  - **GPS-denied plumbing (stub, PLUMBING TEST ONLY):** PASS. 2176 VISP records, 0 ignored; altitude error max 2.2 cm, drift 1.1 cm; `MOT_THST_HOVER` 0.4916.
+- **Stub-run arming retries explained:**
+  - Every stub flight arms on the 4th attempt, after "Accels inconsistent" ×2 and "Gyros inconsistent" (4 runs on 10-04, 1 today). No GPS run has retried (OBSERVED).
+  - From the tlogs (s after boot): GPS run EKF ready 40.8, armed 42.1 on the first try; stub run EKF ready 4.4, attempts 5.7 ✗, 12.2 ✗, 18.7 ✗, armed 25.2 (OBSERVED).
+  - `AP_Arming::ins_checks` needs the accels consistent for 10 s and only then checks the gyros, which also need 10 s (SOURCE-CODE VERIFIED, `libraries/AP_Arming/AP_Arming.cpp`). The stub makes the EKF ready about 36 s earlier, so the script arms inside those windows (INFERRED).
+  - Added `--arm-delay N` to `tools/sitl_flight_test.py` (default 0, behaviour unchanged). The confirmation run (`--arm-delay 25`, expect no retries) is **NOT RUN** yet.
+- **Gazebo GUI on macOS:** a `gz sim -g` client attached to a headless `gz sim -s -r` server (separate terminals) showed the NIDAR maze and the flight (OBSERVED by Arif). The first open was slow; cause not determined.
+- **Manual LOITER flight in `nidar_maze`** (`scripts/launch_sim.sh nidar_maze --sitl`, `logs/launch-20261018-141428/`):
+  - `rc 3 1600` climbed at about 2 cm/s, because 1600 is the edge of the `THR_DZ` 100 dead zone (rate OBSERVED, cause INFERRED).
+  - With forward pitch held (`rc 2 1450`), the vehicle moved +2.05 m in x and stopped with its centre 0.12 m from the wall face at x = −4.55 m, which is where the 0.22 m body collision box meets it. It stayed pressed against the wall at up to 30° tilt (`ANGLE_MAX`) for about 80 s (OBSERVED, SIM truth).
+  - In RTL it could not climb at ThO 1.00, and ArduPilot reported "Potential Thrust Loss (1)" (ERR subsys 25). The CCW motors were near maximum and the CW motors low, consistent with the still-held yaw input (`rc 4 1550`) that the wedged vehicle could not follow (INFERRED). Cause: wall contact, not the motor model.
+  - **FINDING (collision model):** the rotor links have visual geometry only, so contact is modelled by the body box alone. The vehicle can get 0.11 m from a wall while its propeller disks, which reach 0.39 m from the centre along each axis, pass through it. Wall clearance in the maze is therefore optimistic. Options: a prop-guard collision box on the base link, or a clearance check that flags prop–wall overlap as a crash. Changing the baseline needs approval.

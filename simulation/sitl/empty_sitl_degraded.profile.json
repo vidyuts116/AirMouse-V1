@@ -1,0 +1,37 @@
+{
+ "profile": "degraded",
+ "description": "Stronger draught with gusts, poor IMU (high vibration, large bias), frequent LiDAR dropouts.",
+ "wind": {
+  "enabled": true,
+  "mean_velocity": [
+   2.0,
+   0.5,
+   0.0
+  ],
+  "drag_per_s": 0.15,
+  "gust_amplitude_percent": 0.8,
+  "gust_period_s": 6.0,
+  "magnitude_noise_stddev": 0.15,
+  "direction_amplitude_deg": 40.0,
+  "direction_period_s": 15.0,
+  "direction_noise_stddev": 0.05,
+  "vertical_noise_stddev": 0.1,
+  "seed": 12
+ },
+ "imu": {
+  "enabled": true,
+  "gyro_noise_stddev": 0.01,
+  "gyro_bias_stddev": 0.01,
+  "gyro_dynamic_bias_stddev": 0.0005,
+  "accel_noise_stddev": 0.25,
+  "accel_bias_stddev": 0.2,
+  "accel_dynamic_bias_stddev": 0.01,
+  "dynamic_bias_correlation_time_s": 300.0
+ },
+ "lidar_dropout": {
+  "enabled": true,
+  "beam_dropout_prob": 0.05,
+  "scan_dropout_prob": 0.03,
+  "seed": 22
+ }
+}

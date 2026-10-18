@@ -1,0 +1,38 @@
+
+Stage 0  World empty
+  [PASS] generated from current baseline: measured 21626e644770873e… | expected 21626e644770873e… (OBSERVED)
+  [PASS] gz sdf -k: measured Valid. | expected Valid. (OBSERVED)
+  [PASS] LiDAR rate (sim time): measured 10.24 Hz over 2.24 s | expected 10 Hz ±10 % (OBSERVED)
+  [INFO] vehicle rest pose: x -0.0000, y -0.0000, z 0.0400 m, yaw -0.000 deg (spawn 0, 0); 0 wall boxes (OBSERVED)
+  [PASS] beams within ray-cast band (±half beam step, ±5 cm; or no-return): measured 360/360 = 100.0 % (0 beams expect a return; band ±0.50 deg) | expected >= 98 % (ANALYTICAL ray cast vs OBSERVED) (OBSERVED)
+  [INFO] range bias / noise: no well-conditioned returns expected (open world) (OBSERVED)
+
+Stage 1  World wall
+  [PASS] generated from current baseline: measured 21626e644770873e… | expected 21626e644770873e… (OBSERVED)
+  [PASS] gz sdf -k: measured Valid. | expected Valid. (OBSERVED)
+  [PASS] LiDAR rate (sim time): measured 10.28 Hz over 2.53 s | expected 10 Hz ±10 % (OBSERVED)
+  [INFO] vehicle rest pose: x -0.0000, y -0.0000, z 0.0400 m, yaw -0.000 deg (spawn 0, 0); 1 wall boxes (OBSERVED)
+  [PASS] beams within ray-cast band (±half beam step, ±5 cm; or no-return): measured 360/360 = 100.0 % (68 beams expect a return; band ±0.50 deg) | expected >= 98 % (ANALYTICAL ray cast vs OBSERVED) (OBSERVED)
+  [INFO] implied beam-angle error (finite returns): all: median |off| 0.24 deg; grazing beams (band > ±5 cm, n=2): max |off| 0.03 deg (INFERRED)
+  [PASS] range bias, well-conditioned beams (band <= ±1 cm): measured +0.20 mm (n=40 beams, max |err| 7.7 mm) | expected |bias| <= 5 mm (OBSERVED)
+  [PASS] single-scan noise / configured sigma (well-conditioned beams): measured 10.39 mm / 10 mm = 1.04 | expected 0.5-2.0 (OBSERVED)
+
+Stage 2  World corridor
+  [PASS] generated from current baseline: measured 21626e644770873e… | expected 21626e644770873e… (OBSERVED)
+  [PASS] gz sdf -k: measured Valid. | expected Valid. (OBSERVED)
+  [PASS] LiDAR rate (sim time): measured 10.27 Hz over 2.44 s | expected 10 Hz ±10 % (OBSERVED)
+  [INFO] vehicle rest pose: x -0.0000, y -0.0000, z 0.0400 m, yaw -0.000 deg (spawn 0, 0); 2 wall boxes (OBSERVED)
+  [PASS] beams within ray-cast band (±half beam step, ±5 cm; or no-return): measured 360/360 = 100.0 % (322 beams expect a return; band ±0.50 deg) | expected >= 98 % (ANALYTICAL ray cast vs OBSERVED) (OBSERVED)
+  [INFO] implied beam-angle error (finite returns): all: median |off| 0.22 deg; grazing beams (band > ±5 cm, n=60): max |off| 0.43 deg (INFERRED)
+  [PASS] range bias, well-conditioned beams (band <= ±1 cm): measured -0.37 mm (n=162 beams, max |err| 9.1 mm) | expected |bias| <= 5 mm (OBSERVED)
+  [PASS] single-scan noise / configured sigma (well-conditioned beams): measured 10.04 mm / 10 mm = 1.00 | expected 0.5-2.0 (OBSERVED)
+
+Cleanup: gz sim processes left = 0; GZ_IP=127.0.0.1
+
+| World | Result | Wall boxes | Beams matching | Range bias | Single-scan noise | LiDAR rate |
+|---|---|---|---|---|---|---|
+| empty | PASS | 0 | 360/360 | — | — | 10.24 Hz |
+| wall | PASS | 1 | 360/360 | +0.20 mm | 10.4 mm | 10.28 Hz |
+| corridor | PASS | 2 | 360/360 | -0.37 mm | 10.0 mm | 10.27 Hz |
+
+OVERALL: PASS

@@ -1,0 +1,32 @@
+AirMouse SITL motor test 2026-10-03T19:29:29: pwm 1300 -> 240.0 rad/s expected; world simulation/sitl/empty_sitl.sdf
+  MAVProxy connected to SITL
+  [FAIL] aborted: Timeout exceeded.
+<pexpect.pty_spawn.spawn object at 0x1083ab770>
+command: /Users/arif_svii/Drone/.venv-ardupilot/bin/mavproxy.py
+args: [b'/Users/arif_svii/Drone/.venv-ardupilot/bin/mavproxy.py', b'--master', b'tcp:127.0.0.1:5760', b'--state-basedir', b'/Users/arif_svii/Drone/logs/phase3-2026-10-03/motortest_192929', b'--non-interactive']
+buffer (last 100 chars): 'lox at 230400 baud\r\nAP: GPS 1: detected u-blox\r\nAP: EKF3 IMU0 origin set\r\nAP: EKF3 IMU1 origin set\r\n'
+before (last 100 chars): 'lox at 230400 baud\r\nAP: GPS 1: detected u-blox\r\nAP: EKF3 IMU0 origin set\r\nAP: EKF3 IMU1 origin set\r\n'
+after: <class 'pexpect.exceptions.TIMEOUT'>
+match: None
+match_index: None
+exitstatus: None
+flag_eof: False
+pid: 82239
+child_fd: 12
+closed: False
+timeout: 60
+delimiter: <class 'pexpect.exceptions.EOF'>
+logfile: None
+logfile_read: <_io.TextIOWrapper name='/Users/arif_svii/Drone/logs/phase3-2026-10-03/motortest_192929/mavproxy.log' mode='w' encoding='UTF-8'>
+logfile_send: None
+maxread: 2000
+ignorecase: False
+searchwindowsize: None
+delaybeforesend: 0.05
+delayafterclose: 0.1
+delayafterterminate: 0.1
+searcher: searcher_re:
+    0: re.compile('FRAME_CLASS\\s+(-?[\\d.]+)')
+
+Cleanup: gz sim processes left = 0; run files in logs/phase3-2026-10-03/motortest_192929
+OVERALL: FAIL

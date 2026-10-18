@@ -1,0 +1,26 @@
+AirMouse SITL flight test 2026-10-04T18:23:14: simulation/sitl/empty_sitl_s01.sdf, takeoff 1.5 m, hover 20.0 s; params PROVISIONAL (not flight-approved)
+  *** ExternalNav stub started: GROUND-TRUTH-DERIVED, PLUMBING TEST ONLY ***
+  EKF ready: 'EKF3 IMU0 is using external nav data'
+  arm attempt 1: Arm: Accels inconsistent
+  arm attempt 2: Arm: Accels inconsistent
+  arm attempt 3: Arm: Gyros inconsistent
+  [PASS] GUIDED + arm: measured ARMED | expected ARMED (OBSERVED)
+  [PASS] takeoff to 1.5 m (truth z >= target - 0.1 m): measured reached z 1.458 m at t=35.19 | expected z_home 0.040 + 1.5 = 1.540 m (OBSERVED)
+  [PASS] switch to LOITER (RC 1-4 = 1500): measured LOITER | expected LOITER (OBSERVED)
+  [PASS] stable hover (|tilt| <= 30 deg, |z err| <= 1 m): measured stable | expected stable (OBSERVED)
+  [PASS] LAND -> auto-disarm: measured DISARMED | expected DISARMED (OBSERVED)
+  [INFO] window 5.0-25.1 s after reaching target (n=1180, pose dt 17 ms):  (OBSERVED)
+  [INFO] altitude hold error (truth z - target): mean +0.3 cm, std 0.5 cm, max |err| 1.1 cm; overshoot after reaching +7.7 cm (OBSERVED)
+  [INFO] attitude (truth): roll std 0.01 deg (peak 0.04), pitch std 0.01 deg (peak 0.13); roll p-p 0.07 deg; dominant roll freq 0.20 Hz; yaw drift 0.03 deg (OBSERVED)
+  [INFO] horizontal position hold (truth): max drift 1.0 cm from window start (OBSERVED)
+  [INFO] learned MOT_THST_HOVER (after disarm, MOT_HOVER_LEARN 2): 0.4977 vs analytical 0.5379 (spin 0/1), 0.5319 (spin 0.15/0.95 (defaults)); initial 0.54 (OBSERVED vs ANALYTICAL)
+  [INFO] ArduPilot rangefinder (dataflash RFND; status 3 = OutOfRangeHigh, 4 = Good): hover Dist mean 1.500 m (std 3.4 cm, status [4]); before takeoff status [3] (OBSERVED)
+  [INFO] dataflash CTUN hover throttle: ThH 0.5400 -> 0.4977 over 26 s airborne; ThO mean (last 20 s airborne) 0.4859 (OBSERVED)
+  [PASS] VISP (ExternalNav pose) records received and consumed: measured 1877 records over 62.4 s, ignored 0, quality [100] | expected > 0, none ignored (OBSERVED)
+  [INFO] EKF-related messages:  (OBSERVED)
+  [INFO] EKF position vs ExternalNav input (last 5 s, vehicle at rest): EKF PN/PE/PD -0.020/+0.014/-0.035 m, yaw 14.42 deg; VISP PX/PY/PZ -0.028/+0.011/-0.012 m, yaw -0.10 deg (OBSERVED)
+  [INFO] mean CPU (100 % = one core) / peak RSS: gz_sim CPU 41 % / RSS 193 MB; arducopter CPU 6 % / RSS 5 MB; mavproxy CPU 7 % / RSS 92 MB (OBSERVED)
+  [INFO] real-time factor (Gazebo sim time / wall time): 0.998 over 68 s (OBSERVED)
+
+Cleanup: gz sim processes left = 0; run files in logs/sim-step2-profiles/wind-calibration/flight_empty_sitl_s01_182314
+OVERALL: PASS
