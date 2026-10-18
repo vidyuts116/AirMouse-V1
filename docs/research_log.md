@@ -58,3 +58,22 @@ Chronological engineering log. Each entry carries evidence labels: OBSERVED, SOU
   - a failsafe contract pending Rohit
   - every item cites the 4.6.3 source
 
+
+## 2026-10-18
+
+- **Full re-run on the unchanged baseline** (`f1c1d0f7`, Gazebo 8.15.0). Console copies in `logs/run-all-2026-10-18/`.
+  - **Regression Stages 0–10:** PASS, 104/104 checks (`logs/regression-2026-10-18/`). Physics values identical to 2026-10-04: a_z at 500/586.8/700 rad/s, rotor Fz 2.933757 N, roll/pitch/yaw α, hover max |z−2| 0.00705 m. The remaining differences are sampling quantisation (rotor t95 40 vs 45 ms) and sensor noise.
+  - **World LiDAR verification, 12 worlds:** PASS. 360/360 beams in the ray-cast band in every world, range bias ≤ 0.64 mm, noise 0.99–1.04 σ, survivor markers seen at 0.70 m.
+  - **SITL, GPS on (`empty_sitl`):** motortest PASS; IMU-frame ground checks PASS; LOITER 30 s PASS: altitude error max 1.2 cm, drift 0.6 cm, learned `MOT_THST_HOVER` 0.4917, RTF 0.998.
+  - **GPS-denied plumbing (stub, PLUMBING TEST ONLY):** PASS. 2176 VISP records, 0 ignored; altitude error max 2.2 cm, drift 1.1 cm; `MOT_THST_HOVER` 0.4916.
+- **Stub-run arming retries explained:**
+  - Every stub flight arms on the 4th attempt, after "Accels inconsistent" ×2 and "Gyros inconsistent" (4 runs on 10-04, 1 today). No GPS run has retried (OBSERVED).
+  - From the tlogs (s after boot): GPS run EKF ready 40.8, armed 42.1 on the first try; stub run EKF ready 4.4, attempts 5.7 ✗, 12.2 ✗, 18.7 ✗, armed 25.2 (OBSERVED).
+  - `AP_Arming::ins_checks` needs the accels consistent for 10 s and only then checks the gyros, which also need 10 s (SOURCE-CODE VERIFIED, `libraries/AP_Arming/AP_Arming.cpp`). The stub makes the EKF ready about 36 s earlier, so the script arms inside those windows (INFERRED).
+  - Added `--arm-delay N` to `tools/sitl_flight_test.py` (default 0, behaviour unchanged). The confirmation run (`--arm-delay 25`, expect no retries) is **NOT RUN** yet.
+- **Gazebo GUI on macOS:** a `gz sim -g` client attached to a headless `gz sim -s -r` server (separate terminals) showed the NIDAR maze and the flight (OBSERVED by Arif). The first open was slow; cause not determined.
+- **Manual LOITER flight in `nidar_maze`** (`scripts/launch_sim.sh nidar_maze --sitl`, `logs/launch-20261018-141428/`):
+  - `rc 3 1600` climbed at about 2 cm/s, because 1600 is the edge of the `THR_DZ` 100 dead zone (rate OBSERVED, cause INFERRED).
+  - With forward pitch held (`rc 2 1450`), the vehicle moved +2.05 m in x and stopped with its centre 0.12 m from the wall face at x = −4.55 m, which is where the 0.22 m body collision box meets it. It stayed pressed against the wall at up to 30° tilt (`ANGLE_MAX`) for about 80 s (OBSERVED, SIM truth).
+  - In RTL it could not climb at ThO 1.00, and ArduPilot reported "Potential Thrust Loss (1)" (ERR subsys 25). The CCW motors were near maximum and the CW motors low, consistent with the still-held yaw input (`rc 4 1550`) that the wedged vehicle could not follow (INFERRED). Cause: wall contact, not the motor model.
+  - **FINDING (collision model):** the rotor links have visual geometry only, so contact is modelled by the body box alone. The vehicle can get 0.11 m from a wall while its propeller disks, which reach 0.39 m from the centre along each axis, pass through it. Wall clearance in the maze is therefore optimistic. Options: a prop-guard collision box on the base link, or a clearance check that flags prop–wall overlap as a crash. Changing the baseline needs approval.

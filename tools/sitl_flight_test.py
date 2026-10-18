@@ -95,6 +95,8 @@ def main():
                         help="seconds after the analysed hover window starts: stop the ExternalNav stub (SIGUSR1)")
     parser.add_argument("--ground-only", action="store_true",
                         help="no arming: after the EKF is ready, record --hover seconds on the ground (plumbing check)")
+    parser.add_argument("--arm-delay", type=float, default=0.0,
+                        help="seconds to wait after the EKF is ready before the first arm attempt (0 = arm at once)")
     parser.add_argument("--nav-loss-dur", type=float, default=0.0,
                         help="seconds of ExternalNav loss (0 = until the end of the test)")
     parser.add_argument("--logdir", default=str(ROOT / "logs" / f"phase3-{date.today().isoformat()}"))
@@ -150,6 +152,9 @@ def main():
             drain(args.hover)
             marks["ground_only"] = (rest[0], streams.latest()[0])
             raise reg.StageFail("ground-only plumbing check complete (no flight, by request)")
+        if args.arm_delay > 0:
+            log(f"  waiting {args.arm_delay:.0f} s before arming (--arm-delay)")
+            drain(args.arm_delay)
         armed = False
         for attempt in range(12):
             mav.sendline("mode guided")

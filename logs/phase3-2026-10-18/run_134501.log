@@ -1,0 +1,20 @@
+AirMouse SITL IMU-frame ground checks 2026-10-18T13:45:03
+
+Stage 0  Ground check: level
+  [PASS] ArduPilot RAW_IMU AccX (FRD): measured -0.006 m/s^2 (n=50) | expected +0.000 ±0.15 (ANALYTICAL) (OBSERVED)
+  [PASS] ArduPilot RAW_IMU AccY (FRD): measured +0.000 m/s^2 (n=50) | expected +0.000 ±0.15 (ANALYTICAL) (OBSERVED)
+  [PASS] ArduPilot RAW_IMU AccZ (FRD): measured -9.826 m/s^2 (n=50) | expected -9.810 ±0.15 (ANALYTICAL) (OBSERVED)
+  [PASS] ArduPilot RAW_IMU gyro ~ 0: measured (+0.0000, +0.0000, +0.0000) rad/s | expected |w| <= 0.01 rad/s (OBSERVED)
+  [PASS] ArduPilot ATTITUDE pitch (nose-up positive): measured -0.00 deg (roll -0.00) | expected +0.0 ±1.0 deg (OBSERVED)
+  [PASS] /airmouse/imu (FLU, ROS contract) accel x / z: measured ax -0.001, az +9.814 m/s^2 (n=1000) | expected ax +0.000, az +9.810 ±0.15 (OBSERVED)
+
+Stage 0  Ground check: noseup
+  [PASS] ArduPilot RAW_IMU AccX (FRD): measured +1.698 m/s^2 (n=50) | expected +1.703 ±0.15 (ANALYTICAL) (OBSERVED)
+  [PASS] ArduPilot RAW_IMU AccY (FRD): measured +0.000 m/s^2 (n=50) | expected +0.000 ±0.15 (ANALYTICAL) (OBSERVED)
+  [PASS] ArduPilot RAW_IMU AccZ (FRD): measured -9.661 m/s^2 (n=50) | expected -9.661 ±0.15 (ANALYTICAL) (OBSERVED)
+  [PASS] ArduPilot RAW_IMU gyro ~ 0: measured (+0.0000, +0.0000, +0.0000) rad/s | expected |w| <= 0.01 rad/s (OBSERVED)
+  [PASS] ArduPilot ATTITUDE pitch (nose-up positive): measured +10.00 deg (roll +0.00) | expected +10.0 ±1.0 deg (OBSERVED)
+  [PASS] /airmouse/imu (FLU, ROS contract) accel x / z: measured ax +1.709, az +9.665 m/s^2 (n=1001) | expected ax +1.703, az +9.661 ±0.15 (OBSERVED)
+
+Cleanup: gz sim processes left = 0; run files in logs/phase3-2026-10-18/groundcheck_134501
+OVERALL: PASS
